@@ -10,7 +10,6 @@ import {
     getDocs,
     setDoc,
     deleteDoc,
-    Timestamp,
 } from '@/lib/firestore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -205,7 +204,7 @@ export function AvailabilityManager() {
                             <div className="py-8 text-center text-muted-foreground">Loading...</div>
                         ) : (
                             <div className="space-y-3">
-                                {availabilityByDay.map(({ day, index, blocks }) => (
+                                {availabilityByDay.map(({ day, blocks }) => (
                                     <div
                                         key={day}
                                         className={`p-4 rounded-lg border ${blocks.length > 0 ? 'bg-primary/5 border-primary/20' : 'bg-muted/30'

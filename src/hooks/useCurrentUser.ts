@@ -3,13 +3,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useUser } from '@clerk/clerk-react'
 import {
     userDoc,
-    getDoc,
     setDoc,
     updateDoc,
     onSnapshot,
     Timestamp,
 } from '@/lib/firestore'
-import type { User, CreateUserData, UserRole } from '@/types'
+import type { User, CreateUserData } from '@/types'
 
 interface UseCurrentUserReturn {
     user: User | null

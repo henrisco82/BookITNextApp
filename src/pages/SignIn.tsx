@@ -119,7 +119,7 @@ export function SignIn() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium">
                   Email Address
@@ -144,8 +144,8 @@ export function SignIn() {
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password
                   </Label>
-                  <Link 
-                    to="/forgot-password" 
+                  <Link
+                    to="/forgot-password"
                     className="text-xs text-primary hover:underline"
                   >
                     Forgot password?
@@ -172,8 +172,8 @@ export function SignIn() {
                   id="remember"
                   className="w-4 h-4 rounded border-input"
                 />
-                <Label 
-                  htmlFor="remember" 
+                <Label
+                  htmlFor="remember"
                   className="text-sm font-normal cursor-pointer"
                 >
                   Remember me for 30 days
@@ -182,9 +182,9 @@ export function SignIn() {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 pt-2">
-              <Button 
-                type="submit" 
-                className="w-full h-11 gap-2" 
+              <Button
+                type="submit"
+                className="w-full h-11 gap-2"
                 disabled={isLoading || isGoogleLoading}
               >
                 {isLoading ? (
@@ -212,9 +212,9 @@ export function SignIn() {
               </div>
 
               <Link to="/signup" className="w-full">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="w-full h-11"
                   disabled={isLoading || isGoogleLoading}
                 >
@@ -238,7 +238,7 @@ export function SignIn() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>© 2024 Your Company. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Henry Unah. All rights reserved.</p>
         </div>
       </div>
     </div>

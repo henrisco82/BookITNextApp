@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { Mail, Lock, AlertCircle, UserPlus, Sparkles, User, Chrome, Check } from 'lucide-react'
-import { useSignUp } from '@clerk/clerk-react'
+import { Mail, Lock, AlertCircle, UserPlus, Sparkles, User, Check } from 'lucide-react'
+
 
 export function SignUp() {
   const [name, setName] = useState('')
@@ -16,9 +16,9 @@ export function SignUp() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+
   const { signUp } = useAuth()
-  const { signUp: clerkSignUp } = useSignUp()
+
   const navigate = useNavigate()
 
   const passwordRequirements = [
@@ -56,21 +56,8 @@ export function SignUp() {
     }
   }
 
-  const handleGoogleSignUp = async () => {
-    setError('')
-    setIsGoogleLoading(true)
 
-    try {
-      await clerkSignUp?.authenticateWithRedirect({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback',
-        redirectUrlComplete: '/dashboard',
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to sign up with Google')
-      setIsGoogleLoading(false)
-    }
-  }
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4 relative overflow-hidden">
@@ -124,7 +111,7 @@ export function SignUp() {
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    disabled={isLoading || isGoogleLoading}
+                    disabled={isLoading}
                     className="pl-10 h-11"
                   />
                 </div>
@@ -143,7 +130,7 @@ export function SignUp() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    disabled={isLoading || isGoogleLoading}
+                    disabled={isLoading}
                     className="pl-10 h-11"
                   />
                 </div>
@@ -162,7 +149,7 @@ export function SignUp() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    disabled={isLoading || isGoogleLoading}
+                    disabled={isLoading}
                     className="pl-10 h-11"
                   />
                 </div>
@@ -181,7 +168,7 @@ export function SignUp() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     required
-                    disabled={isLoading || isGoogleLoading}
+                    disabled={isLoading}
                     className="pl-10 h-11"
                   />
                 </div>
@@ -193,9 +180,8 @@ export function SignUp() {
                   <p className="text-xs font-medium text-muted-foreground">Password requirements:</p>
                   {passwordRequirements.map((req, index) => (
                     <div key={index} className="flex items-center gap-2 text-xs">
-                      <div className={`h-4 w-4 rounded-full flex items-center justify-center ${
-                        req.met ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-muted text-muted-foreground'
-                      }`}>
+                      <div className={`h-4 w-4 rounded-full flex items-center justify-center ${req.met ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-muted text-muted-foreground'
+                        }`}>
                         {req.met && <Check className="h-3 w-3" />}
                       </div>
                       <span className={req.met ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
@@ -212,10 +198,10 @@ export function SignUp() {
                   id="terms"
                   required
                   className="w-4 h-4 rounded border-input mt-0.5"
-                  disabled={isLoading || isGoogleLoading}
+                  disabled={isLoading}
                 />
-                <Label 
-                  htmlFor="terms" 
+                <Label
+                  htmlFor="terms"
                   className="text-sm font-normal cursor-pointer leading-tight"
                 >
                   I agree to the{' '}
@@ -231,10 +217,10 @@ export function SignUp() {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 pt-2">
-              <Button 
-                type="submit" 
-                className="w-full h-11 gap-2" 
-                disabled={isLoading || isGoogleLoading}
+              <Button
+                type="submit"
+                className="w-full h-11 gap-2"
+                disabled={isLoading}
               >
                 {isLoading ? (
                   <>
@@ -261,11 +247,11 @@ export function SignUp() {
               </div>
 
               <Link to="/signin" className="w-full">
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   className="w-full h-11"
-                  disabled={isLoading || isGoogleLoading}
+                  disabled={isLoading}
                 >
                   Sign In
                 </Button>
@@ -276,7 +262,7 @@ export function SignUp() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>© 2024 Your Company. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Henry Unah. All rights reserved.</p>
         </div>
       </div>
     </div>
