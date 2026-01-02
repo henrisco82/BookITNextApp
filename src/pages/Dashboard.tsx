@@ -1,12 +1,27 @@
-import { useNavigate } from 'react-router-dom'
+// Main Dashboard - role-aware landing page with navigation
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
+import { useCurrentUser, useIsProvider, useIsBooker } from '@/hooks/useCurrentUser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { User, Mail, LogOut } from 'lucide-react'
+import {
+  Mail,
+  LogOut,
+  Calendar,
+  Clock,
+  Users,
+  Briefcase,
+  ArrowRight,
+  Globe,
+  Settings
+} from 'lucide-react'
 
 export function Dashboard() {
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
+  const { user: firestoreUser, isLoading } = useCurrentUser()
+  const isProvider = useIsProvider()
+  const isBooker = useIsBooker()
   const navigate = useNavigate()
 
   const handleSignOut = async () => {
@@ -16,15 +31,23 @@ export function Dashboard() {
 
   // Get initials for avatar
   const getInitials = () => {
-    if (user?.name) {
-      return user.name
+    if (firestoreUser?.displayName) {
+      return firestoreUser.displayName
         .split(' ')
         .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
     }
-    return user?.email?.[0]?.toUpperCase() || '?'
+    return firestoreUser?.email?.[0]?.toUpperCase() || '?'
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
+        <div className="animate-pulse text-muted-foreground">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -35,15 +58,15 @@ export function Dashboard() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
+                <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <h1 className="text-xl font-semibold">Dashboard</h1>
+              <h1 className="text-xl font-semibold">BookIt</h1>
             </div>
             <div className="flex items-center gap-3">
               <ThemeToggle />
-              <Button 
-                onClick={handleSignOut} 
-                variant="ghost" 
+              <Button
+                onClick={handleSignOut}
+                variant="ghost"
                 size="sm"
                 className="gap-2"
               >
@@ -57,85 +80,158 @@ export function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid gap-6 md:grid-cols-3">
-          {/* Profile Card - Spans 2 columns on desktop */}
-          <Card className="md:col-span-2 border-2">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">
+            Welcome, {firestoreUser?.displayName?.split(' ')[0] || 'User'}! 👋
+          </h2>
+          <p className="text-muted-foreground">
+            {firestoreUser?.role === 'both'
+              ? 'Manage your availability or book sessions with other providers.'
+              : isProvider
+                ? 'Manage your availability and view your upcoming bookings.'
+                : 'Browse providers and manage your bookings.'
+            }
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {/* Profile Card */}
+          <Card className="border-2">
             <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
-                    <span className="text-2xl font-semibold text-primary">
-                      {getInitials()}
-                    </span>
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl">
-                      {user?.name || 'Welcome'}
-                    </CardTitle>
-                    <CardDescription className="text-base mt-1">
-                      Your profile information
-                    </CardDescription>
-                  </div>
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
+                  <span className="text-xl font-semibold text-primary">
+                    {getInitials()}
+                  </span>
+                </div>
+                <div>
+                  <CardTitle>{firestoreUser?.displayName}</CardTitle>
+                  <CardDescription className="flex items-center gap-1">
+                    <Mail className="h-3 w-3" />
+                    {firestoreUser?.email}
+                  </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-4">
-                <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Mail className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Email Address
-                    </p>
-                    <p className="text-base font-medium truncate mt-0.5">
-                      {user?.email}
-                    </p>
-                  </div>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between p-2 rounded bg-muted/50">
+                  <span className="text-muted-foreground">Role</span>
+                  <span className="font-medium capitalize">{firestoreUser?.role}</span>
                 </div>
-
-                {user?.name && (
-                  <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      <User className="h-5 w-5 text-primary" />
+                <div className="flex justify-between p-2 rounded bg-muted/50">
+                  <span className="text-muted-foreground flex items-center gap-1">
+                    <Globe className="h-3 w-3" /> Timezone
+                  </span>
+                  <span className="font-medium text-xs">{firestoreUser?.timezone}</span>
+                </div>
+                {isProvider && (
+                  <>
+                    <div className="flex justify-between p-2 rounded bg-muted/50">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Session
+                      </span>
+                      <span className="font-medium">{firestoreUser?.defaultSessionMinutes} min</span>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        Full Name
-                      </p>
-                      <p className="text-base font-medium truncate mt-0.5">
-                        {user.name}
-                      </p>
+                    <div className="flex justify-between p-2 rounded bg-muted/50">
+                      <span className="text-muted-foreground">Buffer</span>
+                      <span className="font-medium">{firestoreUser?.bufferMinutes} min</span>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Quick Actions Card */}
+          {/* Provider Actions */}
+          {isProvider && (
+            <Card className="border-2 border-blue-500/20 bg-blue-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+                  <Briefcase className="h-5 w-5" />
+                  Provider Tools
+                </CardTitle>
+                <CardDescription>Manage your availability and bookings</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link to="/provider">
+                  <Button className="w-full justify-between" variant="outline">
+                    <span className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Provider Dashboard
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/provider/availability">
+                  <Button className="w-full justify-between" variant="outline">
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Manage Availability
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Booker Actions */}
+          {isBooker && (
+            <Card className="border-2 border-green-500/20 bg-green-500/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-600 dark:text-green-400">
+                  <Users className="h-5 w-5" />
+                  Book Sessions
+                </CardTitle>
+                <CardDescription>Find providers and book appointments</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Link to="/browse">
+                  <Button className="w-full justify-between" variant="outline">
+                    <span className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Browse Providers
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/my-bookings">
+                  <Button className="w-full justify-between" variant="outline">
+                    <span className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      My Bookings
+                    </span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Account Settings */}
           <Card className="border-2">
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Manage your account
-              </CardDescription>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Account
+              </CardTitle>
+              <CardDescription>Manage your account settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
+              <Link to="/profile/edit">
+                <Button variant="outline" className="w-full justify-start">
+                  Edit Profile
+                </Button>
+              </Link>
               <Button variant="outline" className="w-full justify-start" disabled>
-                Edit Profile
-              </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                Settings
-              </Button>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                Privacy
+                Notification Settings
               </Button>
               <div className="pt-2">
-                <Button 
-                  onClick={handleSignOut} 
-                  variant="destructive" 
+                <Button
+                  onClick={handleSignOut}
+                  variant="destructive"
                   className="w-full gap-2"
                 >
                   <LogOut className="h-4 w-4" />
@@ -145,25 +241,6 @@ export function Dashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Welcome Message */}
-        <Card className="mt-6 border-2 bg-gradient-to-br from-primary/5 to-transparent">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">👋</span>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-1">
-                  Welcome back{user?.name ? `, ${user.name.split(' ')[0]}` : ''}!
-                </h3>
-                <p className="text-muted-foreground">
-                  You're successfully signed in and ready to go. This is your personal dashboard where you can manage your profile and account settings.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
