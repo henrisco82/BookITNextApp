@@ -6,6 +6,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import { ProfileGuard } from '@/components/ProfileGuard'
 import { SignIn } from '@/pages/SignIn'
 import { SignUp } from '@/pages/SignUp'
+import { ForgotPassword } from '@/pages/ForgotPassword'
 import { VerifyEmail } from '@/pages/VerifyEmail'
 import { ProfileSetup } from '@/pages/ProfileSetup'
 import { EditProfile } from '@/pages/EditProfile'
@@ -29,6 +30,7 @@ function App() {
             {/* Public routes */}
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Profile setup - requires auth but no profile */}

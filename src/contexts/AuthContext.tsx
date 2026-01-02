@@ -11,7 +11,11 @@ interface AuthContextType {
   signUp: (email: string, password: string, name?: string) => Promise<{ needsVerification: boolean }>
   verifyEmail: (code: string) => Promise<void>
   resendVerificationCode: () => Promise<void>
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<{ needsSecondFactor: boolean }>
+  verifySignIn: (code: string) => Promise<void>
+  initiatePasswordReset: (email: string) => Promise<void>
+  completePasswordReset: (code: string, newPassword: string) => Promise<void>
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>
   signOut: () => Promise<void>
   isLoading: boolean
   pendingEmail?: string
@@ -31,9 +35,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Transform Clerk user to our User interface
   const user: User | null = isSignedIn && clerkUser
     ? {
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        name: clerkUser.firstName || clerkUser.fullName || undefined,
-      }
+      email: clerkUser.primaryEmailAddress?.emailAddress || '',
+      name: clerkUser.firstName || clerkUser.fullName || undefined,
+    }
     : null
 
   // Get pending email from sign-up resource if available
@@ -66,8 +70,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error: any) {
           const errorMessage = error?.errors?.[0]?.message || error?.message || ''
           // If session already exists, that's okay - user is already signed in
-          if (!errorMessage.toLowerCase().includes('already exists') && 
-              !errorMessage.toLowerCase().includes('session already')) {
+          if (!errorMessage.toLowerCase().includes('already exists') &&
+            !errorMessage.toLowerCase().includes('session already')) {
             throw error
           }
         }
@@ -97,8 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (error: any) {
           const errorMessage = error?.errors?.[0]?.message || error?.message || ''
           // If session already exists, that's okay - user is already signed in
-          if (!errorMessage.toLowerCase().includes('already exists') && 
-              !errorMessage.toLowerCase().includes('session already')) {
+          if (!errorMessage.toLowerCase().includes('already exists') &&
+            !errorMessage.toLowerCase().includes('session already')) {
             throw error
           }
         }
@@ -122,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ needsSecondFactor: boolean }> => {
     if (!clerkSignIn) {
       throw new Error('Sign in is not ready')
     }
@@ -137,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // If already signed in, return early
     if (isSignedIn) {
-      return
+      return { needsSecondFactor: false }
     }
 
     try {
@@ -155,16 +159,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           } catch (error: any) {
             const errorMessage = error?.errors?.[0]?.message || error?.message || ''
             // Check if error is about session already existing
-            const isSessionExistsError = 
-              errorMessage.toLowerCase().includes('already exists') || 
+            const isSessionExistsError =
+              errorMessage.toLowerCase().includes('already exists') ||
               errorMessage.toLowerCase().includes('session already')
-            
+
             // If it's a session exists error, check if we're actually signed in now
             if (isSessionExistsError) {
               // Wait a bit for the session to be active
               await new Promise(resolve => setTimeout(resolve, 100))
               // If we're now signed in, that's fine - return successfully
-              return
+              return { needsSecondFactor: false }
             }
             // For other errors, throw them
             throw error
@@ -177,6 +181,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             throw new Error('Sign in completed but session was not activated')
           }
         }
+        return { needsSecondFactor: false }
+      } else if (result.status === 'needs_second_factor') {
+        const hasEmailCodeStrategy = result.supportedSecondFactors?.find(
+          (f) => f.strategy === 'email_code'
+        )
+        if (hasEmailCodeStrategy) {
+          await result.prepareSecondFactor({ strategy: 'email_code' })
+          return { needsSecondFactor: true }
+        }
+        throw new Error('Two-factor authentication is required but no supported method found.')
       } else {
         // Sign-in is not complete - might need additional steps (MFA, password reset, etc.)
         const statusMessage = result.status || 'unknown'
@@ -185,29 +199,114 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       // Check if we're now signed in (session might have been activated despite error)
       if (isSignedIn) {
-        return
+        return { needsSecondFactor: false }
       }
-      
+
       // Extract and throw the actual error message
       const errorMessage = error?.errors?.[0]?.message || error?.message || ''
-      
+
       // Log error for debugging
       console.error('Sign in error:', error)
-      
+
       // Handle specific error cases
-      if (errorMessage.toLowerCase().includes('already exists') || 
-          errorMessage.toLowerCase().includes('session already')) {
+      if (errorMessage.toLowerCase().includes('already exists') ||
+        errorMessage.toLowerCase().includes('session already')) {
         // Session already exists - user might be signed in
-        return
+        return { needsSecondFactor: false }
       }
-      
+
       // Return the actual error message from Clerk
       if (errorMessage) {
         throw new Error(errorMessage)
       }
-      
+
       // Generic fallback
       throw new Error('Failed to sign in. Please check your credentials and try again.')
+    }
+  }
+
+  const verifySignIn = async (code: string) => {
+    if (!clerkSignIn) {
+      throw new Error('Sign in is not ready')
+    }
+
+    try {
+      const result = await clerkSignIn.attemptSecondFactor({
+        strategy: 'email_code',
+        code,
+      })
+
+      if (result.status === 'complete' && result.createdSessionId) {
+        try {
+          await setActive({ session: result.createdSessionId })
+        } catch (error: any) {
+          const errorMessage = error?.errors?.[0]?.message || error?.message || ''
+          if (!errorMessage.toLowerCase().includes('already exists') &&
+            !errorMessage.toLowerCase().includes('session already')) {
+            throw error
+          }
+        }
+      } else {
+        throw new Error('Verification failed. Please check your code and try again.')
+      }
+    } catch (error: any) {
+      throw new Error(error?.errors?.[0]?.message || error?.message || 'Failed to verify sign in')
+    }
+  }
+
+  const initiatePasswordReset = async (email: string) => {
+    if (!clerkSignIn) {
+      throw new Error('Sign in is not ready')
+    }
+
+    try {
+      await clerkSignIn.create({
+        strategy: 'reset_password_email_code',
+        identifier: email,
+      })
+    } catch (error: any) {
+      throw new Error(error?.errors?.[0]?.message || error?.message || 'Failed to initiate password reset')
+    }
+  }
+
+  const completePasswordReset = async (code: string, newPassword: string) => {
+    if (!clerkSignIn) {
+      throw new Error('Sign in is not ready')
+    }
+
+    try {
+      const result = await clerkSignIn.attemptFirstFactor({
+        strategy: 'reset_password_email_code',
+        code,
+        password: newPassword,
+      })
+
+      if (result.status === 'complete' && result.createdSessionId) {
+        try {
+          await setActive({ session: result.createdSessionId })
+        } catch (error: any) {
+          // If session is set, we're good
+        }
+      } else {
+        throw new Error('Password reset incomplete. Please try again.')
+      }
+    } catch (error: any) {
+      throw new Error(error?.errors?.[0]?.message || error?.message || 'Failed to complete password reset')
+    }
+  }
+
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!clerkUser) {
+      throw new Error('User is not logged in')
+    }
+
+    try {
+      await clerkUser.updatePassword({
+        currentPassword,
+        newPassword,
+      })
+    } catch (error: any) {
+      throw new Error(error?.errors?.[0]?.message || error?.message || 'Failed to change password')
     }
   }
 
@@ -219,15 +318,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      signUp, 
-      verifyEmail, 
+    <AuthContext.Provider value={{
+      user,
+      signUp,
+      verifyEmail,
       resendVerificationCode,
-      signIn, 
-      signOut, 
+      signIn,
+      verifySignIn,
+      initiatePasswordReset,
+      completePasswordReset,
+      changePassword,
+      signOut,
       isLoading,
-      pendingEmail 
+      pendingEmail
     }}>
       {children}
     </AuthContext.Provider>

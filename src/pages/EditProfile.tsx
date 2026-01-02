@@ -8,16 +8,20 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { ArrowLeft, Save, Trash2, User, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock } from 'lucide-react'
 
 export function EditProfile() {
     const navigate = useNavigate()
     const { user, updateProfile, isLoading } = useCurrentUser()
-    const { signOut } = useAuth()
+    const { signOut, changePassword } = useAuth()
 
     const [formData, setFormData] = useState({
         displayName: '',
         bio: '',
+    })
+    const [passwords, setPasswords] = useState({
+        current: '',
+        new: ''
     })
     const [isSaving, setIsSaving] = useState(false)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -37,6 +41,22 @@ export function EditProfile() {
             ...prev,
             [name]: value
         }))
+    }
+
+    const handlePasswordChange = async () => {
+        if (!passwords.current || !passwords.new) return
+
+        setIsSaving(true)
+        try {
+            await changePassword(passwords.current, passwords.new)
+            setPasswords({ current: '', new: '' })
+            alert('Password updated successfully')
+        } catch (error) {
+            console.error('Error changing password:', error)
+            alert(error instanceof Error ? error.message : 'Failed to update password')
+        } finally {
+            setIsSaving(false)
+        }
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -162,6 +182,49 @@ export function EditProfile() {
                         </CardContent>
                     </Card>
 
+                    {/* Security Settings */}
+                    <Card className="border-2">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Lock className="h-5 w-5 text-primary" />
+                                Security
+                            </CardTitle>
+                            <CardDescription>
+                                Update your password and security settings
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="space-y-2">
+                                <Label htmlFor="currentPassword">Current Password</Label>
+                                <Input
+                                    id="currentPassword"
+                                    type="password"
+                                    value={passwords.current}
+                                    onChange={(e) => setPasswords(prev => ({ ...prev, current: e.target.value }))}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="newPassword">New Password</Label>
+                                <Input
+                                    id="newPassword"
+                                    type="password"
+                                    value={passwords.new}
+                                    onChange={(e) => setPasswords(prev => ({ ...prev, new: e.target.value }))}
+                                    placeholder="••••••••"
+                                />
+                            </div>
+                            <Button
+                                type="button"
+                                onClick={handlePasswordChange}
+                                disabled={isSaving || !passwords.current || !passwords.new}
+                                variant="outline"
+                            >
+                                Update Password
+                            </Button>
+                        </CardContent>
+                    </Card>
+
                     {/* Action Buttons */}
                     <div className="flex items-center gap-4">
                         <Button type="submit" className="flex-1 gap-2" disabled={isSaving}>
@@ -176,7 +239,7 @@ export function EditProfile() {
                     </div>
 
                     {/* Danger Zone */}
-                    <Card className="border-2 border-destructive/20 bg-destructive/5 mt-12">
+                    <Card className="border-2 border-destructive/20 bg-destructive/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-destructive">
                                 <AlertTriangle className="h-5 w-5" />

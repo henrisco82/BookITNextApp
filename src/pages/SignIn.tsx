@@ -15,7 +15,9 @@ export function SignIn() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
-  const { signIn } = useAuth()
+  const [showTwoFactor, setShowTwoFactor] = useState(false)
+  const [verificationCode, setVerificationCode] = useState('')
+  const { signIn, verifySignIn } = useAuth()
   const { signIn: clerkSignIn } = useSignIn()
   const navigate = useNavigate()
 
@@ -25,10 +27,29 @@ export function SignIn() {
     setIsLoading(true)
 
     try {
-      await signIn(email, password)
-      navigate('/dashboard')
+      const result = await signIn(email, password)
+      if (result.needsSecondFactor) {
+        setShowTwoFactor(true)
+      } else {
+        navigate('/dashboard')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to sign in')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleVerification = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setIsLoading(true)
+
+    try {
+      await verifySignIn(verificationCode)
+      navigate('/dashboard')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Verification failed')
     } finally {
       setIsLoading(false)
     }
@@ -74,12 +95,16 @@ export function SignIn() {
 
         <Card className="border-2 shadow-xl">
           <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl text-center">Sign In</CardTitle>
+            <CardTitle className="text-2xl text-center">
+              {showTwoFactor ? 'Verification Required' : 'Sign In'}
+            </CardTitle>
             <CardDescription className="text-center">
-              Enter your credentials to access your account
+              {showTwoFactor
+                ? 'Please enter the verification code sent to your email'
+                : 'Enter your credentials to access your account'}
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={showTwoFactor ? handleVerification : handleSubmit}>
             <CardContent className="space-y-4">
               {error && (
                 <div className="flex items-start gap-3 p-4 text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg">
@@ -88,97 +113,120 @@ export function SignIn() {
                 </div>
               )}
 
-              {/* Google Sign In Button */}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-11 gap-2"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading || isGoogleLoading}
-              >
-                {isGoogleLoading ? (
-                  <>
-                    <div className="h-4 w-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                    Connecting to Google...
-                  </>
-                ) : (
-                  <>
-                    <Chrome className="h-5 w-5" />
-                    Continue with Google
-                  </>
-                )}
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with email
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">
-                  Email Address
-                </Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="pl-10 h-11"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium">
-                    Password
-                  </Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs text-primary hover:underline"
+              {!showTwoFactor ? (
+                <>
+                  {/* Google Sign In Button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full h-11 gap-2"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading || isGoogleLoading}
                   >
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    {isGoogleLoading ? (
+                      <>
+                        <div className="h-4 w-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                        Connecting to Google...
+                      </>
+                    ) : (
+                      <>
+                        <Chrome className="h-5 w-5" />
+                        Continue with Google
+                      </>
+                    )}
+                  </Button>
+
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with email
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-sm font-medium">
+                      Email Address
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="pl-10 h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password" className="text-sm font-medium">
+                        Password
+                      </Label>
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="password"
+                        type="password"
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="pl-10 h-11"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="remember"
+                      className="w-4 h-4 rounded border-input"
+                    />
+                    <Label
+                      htmlFor="remember"
+                      className="text-sm font-normal cursor-pointer"
+                    >
+                      Remember me for 30 days
+                    </Label>
+                  </div>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="text-sm font-medium">
+                    Verification Code
+                  </Label>
                   <Input
-                    id="password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    id="code"
+                    type="text"
+                    placeholder="Enter code"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
                     required
                     disabled={isLoading}
-                    className="pl-10 h-11"
+                    className="h-11 text-center text-lg tracking-widest"
                   />
+                  <p className="text-xs text-muted-foreground text-center">
+                    Check your email for the verification code
+                  </p>
                 </div>
-              </div>
-
-              <div className="flex items-center space-x-2 pt-2">
-                <input
-                  type="checkbox"
-                  id="remember"
-                  className="w-4 h-4 rounded border-input"
-                />
-                <Label
-                  htmlFor="remember"
-                  className="text-sm font-normal cursor-pointer"
-                >
-                  Remember me for 30 days
-                </Label>
-              </div>
+              )}
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 pt-2">
@@ -190,48 +238,64 @@ export function SignIn() {
                 {isLoading ? (
                   <>
                     <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                    Signing in...
+                    {showTwoFactor ? 'Verifying...' : 'Signing in...'}
                   </>
                 ) : (
                   <>
                     <LogIn className="h-4 w-4" />
-                    Sign In
+                    {showTwoFactor ? 'Verify Sign In' : 'Sign In'}
                   </>
                 )}
               </Button>
 
-              <div className="relative w-full">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    New here?
-                  </span>
-                </div>
-              </div>
+              {!showTwoFactor && (
+                <>
+                  <div className="relative w-full">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        New here?
+                      </span>
+                    </div>
+                  </div>
 
-              <Link to="/signup" className="w-full">
+                  <Link to="/signup" className="w-full">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-11"
+                      disabled={isLoading || isGoogleLoading}
+                    >
+                      Create an account
+                    </Button>
+                  </Link>
+
+                  <p className="text-xs text-center text-muted-foreground px-4">
+                    By signing in, you agree to our{' '}
+                    <Link to="/terms" className="text-primary hover:underline">
+                      Terms of Service
+                    </Link>{' '}
+                    and{' '}
+                    <Link to="/privacy" className="text-primary hover:underline">
+                      Privacy Policy
+                    </Link>
+                  </p>
+                </>
+              )}
+
+              {showTwoFactor && (
                 <Button
                   type="button"
-                  variant="outline"
-                  className="w-full h-11"
-                  disabled={isLoading || isGoogleLoading}
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setShowTwoFactor(false)}
+                  disabled={isLoading}
                 >
-                  Create an account
+                  Back to Sign In
                 </Button>
-              </Link>
-
-              <p className="text-xs text-center text-muted-foreground px-4">
-                By signing in, you agree to our{' '}
-                <Link to="/terms" className="text-primary hover:underline">
-                  Terms of Service
-                </Link>{' '}
-                and{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
-              </p>
+              )}
             </CardFooter>
           </form>
         </Card>
