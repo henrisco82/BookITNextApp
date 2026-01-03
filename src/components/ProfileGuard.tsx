@@ -1,5 +1,8 @@
+'use client'
+
 // Guard component that checks for profile existence and role access
-import { Navigate } from 'react-router-dom'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useCurrentUser, useIsProvider, useIsBooker } from '@/hooks/useCurrentUser'
 
 interface ProfileGuardProps {
@@ -8,11 +11,24 @@ interface ProfileGuardProps {
 }
 
 export function ProfileGuard({ children, requiredRole }: ProfileGuardProps) {
+    const router = useRouter()
     const { user, isLoading, needsProfileSetup } = useCurrentUser()
     const isProvider = useIsProvider()
     const isBooker = useIsBooker()
 
-    // Show loading state
+    useEffect(() => {
+        if (!isLoading) {
+            if (needsProfileSetup || !user) {
+                router.replace('/profile-setup')
+            } else if (requiredRole === 'provider' && !isProvider) {
+                router.replace('/dashboard')
+            } else if (requiredRole === 'booker' && !isBooker) {
+                router.replace('/dashboard')
+            }
+        }
+    }, [isLoading, user, needsProfileSetup, isProvider, isBooker, requiredRole, router])
+
+    // Show loading state while checking profile
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -21,18 +37,9 @@ export function ProfileGuard({ children, requiredRole }: ProfileGuardProps) {
         )
     }
 
-    // Redirect to profile setup if no profile exists
-    if (needsProfileSetup || !user) {
-        return <Navigate to="/profile-setup" replace />
-    }
-
-    // Check role access if required
-    if (requiredRole === 'provider' && !isProvider) {
-        return <Navigate to="/dashboard" replace />
-    }
-
-    if (requiredRole === 'booker' && !isBooker) {
-        return <Navigate to="/dashboard" replace />
+    // Don't render children if we are about to redirect
+    if (needsProfileSetup || !user || (requiredRole === 'provider' && !isProvider) || (requiredRole === 'booker' && !isBooker)) {
+        return null
     }
 
     return <>{children}</>
