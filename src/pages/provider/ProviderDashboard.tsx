@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, LogOut, Plus, Images } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export function ProviderDashboard() {
@@ -122,6 +122,12 @@ export function ProviderDashboard() {
                                 <Button variant="outline" className="w-full justify-start gap-2">
                                     <Clock className="h-4 w-4" />
                                     Manage Availability
+                                </Button>
+                            </Link>
+                            <Link to="/provider/portfolio">
+                                <Button variant="outline" className="w-full justify-start gap-2">
+                                    <Images className="h-4 w-4" />
+                                    Manage Portfolio
                                 </Button>
                             </Link>
                             <Link to="/dashboard">

@@ -108,3 +108,14 @@ export interface ProviderCard {
     timezone: string
     defaultSessionMinutes: number
 }
+
+// Portfolio item for provider showcase
+export interface PortfolioItem {
+    id: string
+    providerId: string
+    imageUrl: string
+    title: string
+    description?: string
+    createdAt: Date
+    updatedAt: Date
+}

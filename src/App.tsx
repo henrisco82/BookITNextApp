@@ -15,6 +15,7 @@ import { Dashboard } from '@/pages/Dashboard'
 // Provider pages
 import { ProviderDashboard } from '@/pages/provider/ProviderDashboard'
 import { AvailabilityManager } from '@/pages/provider/AvailabilityManager'
+import { PortfolioManager } from '@/pages/provider/PortfolioManager'
 
 // Booker pages
 import { ProviderDirectory } from '@/pages/booker/ProviderDirectory'
@@ -76,6 +77,17 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/provider/portfolio"
+              element={
+                <ProtectedRoute>
+                  <ProfileGuard requiredRole="provider">
+                    <PortfolioManager />
+                  </ProfileGuard>
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/provider/availability"
               element={
