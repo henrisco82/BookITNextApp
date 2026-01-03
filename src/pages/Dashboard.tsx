@@ -19,7 +19,7 @@ import {
 
 export function Dashboard() {
   const { signOut } = useAuth()
-  const { user: firestoreUser, isLoading } = useCurrentUser()
+  const { user: firestoreUser, isLoading, imageUrl } = useCurrentUser()
   const isProvider = useIsProvider()
   const isBooker = useIsBooker()
   const navigate = useNavigate()
@@ -100,10 +100,18 @@ export function Dashboard() {
           <Card className="border-2">
             <CardHeader className="pb-4">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20">
-                  <span className="text-xl font-semibold text-primary">
-                    {getInitials()}
-                  </span>
+                <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20 overflow-hidden">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={firestoreUser?.displayName || 'User'}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xl font-semibold text-primary">
+                      {getInitials()}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <CardTitle>{firestoreUser?.displayName}</CardTitle>
