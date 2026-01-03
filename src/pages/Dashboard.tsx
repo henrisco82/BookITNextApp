@@ -233,9 +233,11 @@ export function Dashboard() {
                   Edit Profile
                 </Button>
               </Link>
-              <Button variant="outline" className="w-full justify-start" disabled>
-                Notification Settings
-              </Button>
+              <Link to="/profile/edit">
+                <Button variant="outline" className="w-full justify-start">
+                  Notification Settings
+                </Button>
+              </Link>
               <div className="pt-2">
                 <Button
                   onClick={handleSignOut}
