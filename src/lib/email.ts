@@ -2,9 +2,9 @@ import emailjs from '@emailjs/browser'
 import type { Booking } from '@/types'
 import { format } from 'date-fns'
 
-const SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID
-const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID
-const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY
+const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID
+const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID
+const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
 
 export const sendProviderNotification = async (
     booking: Booking,

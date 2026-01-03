@@ -4,7 +4,7 @@
 export type UserRole = 'provider' | 'booker' | 'both'
 
 // Booking status
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'rejected'
 
 // Availability type
 export type AvailabilityType = 'recurring' | 'exclusion'
@@ -29,7 +29,12 @@ export interface User {
     defaultSessionMinutes: number // Default: 60
     bufferMinutes: number // Default: 15
     bio?: string // Optional provider bio
+    imageUrl?: string // Optional profile image URL
     notificationSettings: NotificationSettings
+    // Stripe Connect Fields
+    stripeAccountId?: string
+    pricePerSession?: number // In EUR (cents or float, let's go with float for simplicity in UI)
+    onboardingComplete?: boolean
     createdAt: Date
     updatedAt: Date
 }
@@ -59,9 +64,11 @@ export interface Booking {
     bookerEmail: string
     startUTC: Date // UTC timestamp
     endUTC: Date // UTC timestamp
-    status: 'pending' | 'confirmed' | 'cancelled' | 'rejected'
+    status: BookingStatus
     sessionMinutes: number
     notes?: string // Optional booking notes
+    priceAtBooking?: number // Price agreed at time of booking
+    paymentIntentId?: string // Stripe link
     cancelledAt?: Date
     cancelledBy?: string
     cancellationReason?: string
@@ -79,6 +86,7 @@ export interface CreateUserData {
     bufferMinutes?: number
     bio?: string
     notificationSettings?: NotificationSettings
+    pricePerSession?: number
 }
 
 export interface CreateAvailabilityData {
@@ -101,6 +109,7 @@ export interface CreateBookingData {
     endUTC: Date
     sessionMinutes: number
     notes?: string
+    priceAtBooking?: number
 }
 
 // Time slot for booking UI
@@ -119,6 +128,7 @@ export interface ProviderCard {
     bio?: string
     timezone: string
     defaultSessionMinutes: number
+    pricePerSession?: number
 }
 
 // Portfolio item for provider showcase

@@ -195,5 +195,6 @@ export {
     orderBy,
     onSnapshot,
     Timestamp,
+    db,
 }
 export type { DocumentReference, CollectionReference }

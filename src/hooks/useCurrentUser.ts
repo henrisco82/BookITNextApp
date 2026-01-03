@@ -1,6 +1,6 @@
 // Hook to manage current user's Firestore profile with Clerk sync
 import { useState, useEffect, useCallback } from 'react'
-import { useUser } from '@clerk/clerk-react'
+import { useUser } from '@clerk/nextjs'
 import {
     userDoc,
     setDoc,
@@ -23,47 +23,39 @@ interface UseCurrentUserReturn {
 
 export function useCurrentUser(): UseCurrentUserReturn {
     const { user: clerkUser, isLoaded: isClerkLoaded } = useUser()
-    const [user, setUser] = useState<User | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<Error | null>(null)
-    const [needsProfileSetup, setNeedsProfileSetup] = useState(false)
+
+    const [innerUser, setInnerUser] = useState<User | null>(null)
+    const [innerIsLoading, setInnerIsLoading] = useState(true)
+    const [innerNeedsProfileSetup, setInnerNeedsProfileSetup] = useState(false)
+
+    // Derived states
+    const user = clerkUser ? innerUser : null
+    const isLoading = isClerkLoaded ? (clerkUser ? innerIsLoading : false) : true
+    const needsProfileSetup = clerkUser ? innerNeedsProfileSetup : false
 
     // Subscribe to user document in Firestore
     useEffect(() => {
-        if (!isClerkLoaded) return
-
-        // If no Clerk user, reset state
-        if (!clerkUser) {
-            setUser(null)
-            setIsLoading(false)
-            setNeedsProfileSetup(false)
-            return
-        }
+        if (!isClerkLoaded || !clerkUser) return
 
         const userId = clerkUser.id
-        const docRef = userDoc(userId)
+        const userRef = userDoc(userId)
 
-        // Set up real-time listener
-        const unsubscribe = onSnapshot(
-            docRef,
-            (snapshot) => {
-                if (snapshot.exists()) {
-                    setUser(snapshot.data())
-                    setNeedsProfileSetup(false)
-                } else {
-                    // User exists in Clerk but not in Firestore
-                    setUser(null)
-                    setNeedsProfileSetup(true)
-                }
-                setIsLoading(false)
-                setError(null)
-            },
-            (err) => {
-                console.error('Error fetching user profile:', err)
-                setError(err as Error)
-                setIsLoading(false)
+        const unsubscribe = onSnapshot(userRef, (doc) => {
+            if (doc.exists()) {
+                const userData = doc.data() as User
+                setInnerUser(userData)
+                setInnerNeedsProfileSetup(!userData.onboardingComplete)
+            } else {
+                setInnerUser(null)
+                setInnerNeedsProfileSetup(true)
             }
-        )
+            setInnerIsLoading(false)
+        }, (err) => {
+            console.error('Error fetching current user:', err)
+            setError(err as Error)
+            setInnerIsLoading(false)
+        })
 
         return () => unsubscribe()
     }, [clerkUser, isClerkLoaded])
@@ -101,6 +93,9 @@ export function useCurrentUser(): UseCurrentUserReturn {
                         bookingCancelled: false,
                     }
                 },
+                // Default Stripe Fields
+                pricePerSession: data.pricePerSession || 0,
+                onboardingComplete: false,
                 createdAt: now.toDate(),
                 updatedAt: now.toDate(),
             }
