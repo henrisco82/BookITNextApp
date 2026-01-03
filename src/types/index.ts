@@ -9,6 +9,16 @@ export type BookingStatus = 'pending' | 'confirmed' | 'cancelled'
 // Availability type
 export type AvailabilityType = 'recurring' | 'exclusion'
 
+// Notification settings
+export interface NotificationSettings {
+    email: {
+        newBookingRequest: boolean    // For Providers: Alerts when a booker requests a slot
+        bookingConfirmed: boolean    // For Bookers: Alerts when a provider accepts
+        bookingDeclined: boolean     // For Bookers: Alerts when a provider rejects
+        bookingCancelled: boolean    // For Both: Alerts when a session is cancelled
+    }
+}
+
 // User profile stored in Firestore
 export interface User {
     id: string // Same as Clerk user ID
@@ -19,6 +29,7 @@ export interface User {
     defaultSessionMinutes: number // Default: 60
     bufferMinutes: number // Default: 15
     bio?: string // Optional provider bio
+    notificationSettings: NotificationSettings
     createdAt: Date
     updatedAt: Date
 }
@@ -48,11 +59,11 @@ export interface Booking {
     bookerEmail: string
     startUTC: Date // UTC timestamp
     endUTC: Date // UTC timestamp
-    status: BookingStatus
+    status: 'pending' | 'confirmed' | 'cancelled' | 'rejected'
     sessionMinutes: number
     notes?: string // Optional booking notes
     cancelledAt?: Date
-    cancelledBy?: 'provider' | 'booker'
+    cancelledBy?: string
     cancellationReason?: string
     createdAt: Date
     updatedAt: Date
@@ -67,6 +78,7 @@ export interface CreateUserData {
     defaultSessionMinutes?: number
     bufferMinutes?: number
     bio?: string
+    notificationSettings?: NotificationSettings
 }
 
 export interface CreateAvailabilityData {

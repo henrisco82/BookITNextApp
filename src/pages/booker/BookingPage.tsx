@@ -13,7 +13,6 @@ import {
     getDocs,
     getDoc,
     setDoc,
-    Timestamp,
 } from '@/lib/firestore'
 import {
     formatInTimezone,
@@ -25,11 +24,12 @@ import {
     isSlotAvailable,
     getUserTimezone,
 } from '@/lib/timezone'
+import { sendProviderNotification } from '@/lib/email'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { User, Availability, Booking, PortfolioItem } from '@/types'
-import { ArrowLeft, Calendar, Clock, Check, ChevronLeft, ChevronRight, Globe, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, ChevronLeft, ChevronRight, Globe, Image as ImageIcon } from 'lucide-react'
 
 export function BookingPage() {
     const { providerId } = useParams<{ providerId: string }>()
@@ -78,16 +78,18 @@ export function BookingPage() {
                 const availSnap = await getDocs(availQ)
                 setAvailability(availSnap.docs.map((d) => d.data()))
 
-                // Fetch existing bookings (next 30 days)
+                // Fetch existing bookings (filter client-side to avoid index requirement)
                 const now = new Date()
                 const bookingsQ = query(
                     bookingsCollection,
-                    where('providerId', '==', providerId),
-                    where('startUTC', '>=', Timestamp.fromDate(now)),
-                    where('status', '==', 'confirmed')
+                    where('providerId', '==', providerId)
                 )
                 const bookingsSnap = await getDocs(bookingsQ)
-                setExistingBookings(bookingsSnap.docs.map((d) => d.data()))
+                const confirmedUpComing = bookingsSnap.docs
+                    .map((d) => d.data())
+                    .filter(b => b.status === 'confirmed' && b.startUTC >= now)
+
+                setExistingBookings(confirmedUpComing)
 
                 // Fetch portfolio
                 const portfolioQ = query(
@@ -188,7 +190,7 @@ export function BookingPage() {
                 bookerEmail: currentUser.email,
                 startUTC: selectedSlot.startUTC,
                 endUTC: selectedSlot.endUTC,
-                status: 'confirmed',
+                status: 'pending', // Pending provider confirmation
                 sessionMinutes: provider.defaultSessionMinutes,
                 notes: notes || undefined,
                 createdAt: new Date(),
@@ -196,6 +198,17 @@ export function BookingPage() {
             }
 
             await setDoc(bookingDoc(bookingId), bookingData)
+
+            // Send email notification to provider
+            if (provider.email && provider.notificationSettings?.email?.newBookingRequest) {
+                console.log('Provider prefers email, initiating notification...')
+                await sendProviderNotification(bookingData, provider.email)
+            } else if (provider.email) {
+                console.log('Provider has email but notifications are disabled in settings.')
+            } else {
+                console.warn('Provider email is missing in Firestore profile. Notification skipped.')
+            }
+
             setBookingSuccess(true)
         } catch (error) {
             console.error('Error creating booking:', error)
@@ -232,12 +245,12 @@ export function BookingPage() {
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center p-4">
                 <Card className="max-w-md w-full border-2">
                     <CardContent className="pt-8 text-center">
-                        <div className="h-16 w-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                            <Check className="h-8 w-8 text-green-500" />
+                        <div className="h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto mb-4">
+                            <Clock className="h-8 w-8 text-blue-500" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Booking Confirmed!</h2>
+                        <h2 className="text-2xl font-bold mb-2">Request Sent!</h2>
                         <p className="text-muted-foreground mb-6">
-                            Your session with {provider.displayName} has been booked.
+                            Your request has been sent to {provider.displayName}. You will be notified when they confirm.
                         </p>
                         {selectedSlot && (
                             <div className="p-4 rounded-lg bg-muted/50 mb-6 text-left">

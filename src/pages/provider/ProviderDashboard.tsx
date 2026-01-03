@@ -4,23 +4,29 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
     bookingsCollection,
+    bookingDoc,
+    updateDoc,
     query,
     where,
     getDocs,
+    getDoc,
+    userDoc,
 } from '@/lib/firestore'
 import { formatInTimezone, formatTimeInTimezone } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus, Images } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { sendBookerNotification } from '@/lib/email'
 
 export function ProviderDashboard() {
     const { user } = useCurrentUser()
     const { signOut } = useAuth()
     const navigate = useNavigate()
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
+    const [pendingBookings, setPendingBookings] = useState<Booking[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     // Fetch upcoming bookings
@@ -40,24 +46,36 @@ export function ProviderDashboard() {
                 console.log('Found bookings:', snapshot.docs.length)
 
                 const now = new Date()
-                const bookings = snapshot.docs
-                    .map((doc) => doc.data())
+                const docs = snapshot.docs.map((doc) => doc.data() as Booking)
+
+                // Get confirmed upcoming bookings
+                const confirmed = docs
                     .filter((b) => {
-                        // Filter for confirmed + upcoming
                         const isConfirmed = b.status === 'confirmed'
                         const isUpcoming = b.startUTC > now
-                        console.log('Booking:', b.bookerName, 'status:', b.status, 'startUTC:', b.startUTC, 'isUpcoming:', isUpcoming)
                         return isConfirmed && isUpcoming
                     })
                     .sort((a, b) => {
-                        // Sort by start time ascending
                         const aTime = a.startUTC instanceof Date ? a.startUTC.getTime() : 0
                         const bTime = b.startUTC instanceof Date ? b.startUTC.getTime() : 0
                         return aTime - bTime
                     })
 
-                console.log('Filtered upcoming bookings:', bookings.length)
-                setUpcomingBookings(bookings.slice(0, 5)) // Show next 5
+                // Get pending requests (future only)
+                const pending = docs
+                    .filter((b) => {
+                        const isPending = b.status === 'pending'
+                        const isUpcoming = b.startUTC > now
+                        return isPending && isUpcoming
+                    })
+                    .sort((a, b) => {
+                        const aTime = a.startUTC instanceof Date ? a.startUTC.getTime() : 0
+                        const bTime = b.startUTC instanceof Date ? b.startUTC.getTime() : 0
+                        return aTime - bTime
+                    })
+
+                setUpcomingBookings(confirmed.slice(0, 5))
+                setPendingBookings(pending)
             } catch (error) {
                 console.error('Error fetching bookings:', error)
             } finally {
@@ -71,6 +89,51 @@ export function ProviderDashboard() {
     const handleSignOut = async () => {
         await signOut()
         navigate('/signin')
+    }
+
+    const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {
+        try {
+            const newStatus = action === 'confirm' ? 'confirmed' : 'rejected'
+            await updateDoc(bookingDoc(bookingId), {
+                status: newStatus,
+                updatedAt: new Date()
+            })
+
+            // Update local state
+            setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
+
+            if (action === 'confirm') {
+                const booking = pendingBookings.find(b => b.id === bookingId)
+                if (booking) {
+                    const updated = { ...booking, status: 'confirmed' } as Booking
+                    setUpcomingBookings(prev => [...prev, updated].sort((a, b) =>
+                        (a.startUTC.getTime() - b.startUTC.getTime())
+                    ).slice(0, 5))
+
+                    // Notify Booker
+                    const bookerSnap = await getDoc(userDoc(booking.bookerId))
+                    const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
+
+                    if (bookerData?.notificationSettings?.email?.bookingConfirmed) {
+                        await sendBookerNotification(booking, 'confirmed', booking.bookerEmail)
+                    }
+                }
+            } else {
+                const booking = pendingBookings.find(b => b.id === bookingId)
+                if (booking) {
+                    // Notify Booker
+                    const bookerSnap = await getDoc(userDoc(booking.bookerId))
+                    const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
+
+                    if (bookerData?.notificationSettings?.email?.bookingDeclined) {
+                        await sendBookerNotification(booking, 'rejected', booking.bookerEmail)
+                    }
+                }
+            }
+        } catch (error) {
+            console.error(`Error ${action}ing booking:`, error)
+            alert(`Failed to ${action} booking`)
+        }
     }
 
     return (
@@ -107,6 +170,87 @@ export function ProviderDashboard() {
                         Manage your availability and view upcoming bookings.
                     </p>
                 </div>
+
+                {/* Notifications Status Warning */}
+                {!user?.notificationSettings?.email?.newBookingRequest && (
+                    <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 shrink-0" />
+                            <p className="text-sm">
+                                <strong>Notifications are Off:</strong> You won't receive emails for new booking requests.
+                            </p>
+                        </div>
+                        <Link to="/edit-profile">
+                            <Button variant="outline" size="sm" className="border-amber-500/20 hover:bg-amber-500/10">
+                                Enable Notifications
+                            </Button>
+                        </Link>
+                    </div>
+                )}
+
+                {/* Pending Requests */}
+                {pendingBookings.length > 0 && (
+                    <Card className="mb-6 border-2 border-yellow-500/20 bg-yellow-500/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-yellow-600 dark:text-yellow-500">
+                                <Clock className="h-5 w-5" />
+                                Pending Requests ({pendingBookings.length})
+                            </CardTitle>
+                            <CardDescription>
+                                These bookings require your confirmation
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            {pendingBookings.map((booking) => (
+                                <div key={booking.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-background border gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="font-semibold">{booking.bookerName}</span>
+                                            <span className="text-xs px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-500">
+                                                Pending
+                                            </span>
+                                        </div>
+                                        <div className="text-sm text-muted-foreground space-y-1">
+                                            <p className="flex items-center gap-2">
+                                                <Calendar className="h-3 w-3" />
+                                                {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEEE, MMMM d, yyyy')}
+                                            </p>
+                                            <p className="flex items-center gap-2">
+                                                <Clock className="h-3 w-3" />
+                                                {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} -{' '}
+                                                {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
+                                            </p>
+                                            {booking.notes && (
+                                                <blockquote className="border-l-2 pl-2 mt-2 italic text-xs opacity-80">
+                                                    "{booking.notes}"
+                                                </blockquote>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border-red-200 dark:border-red-900"
+                                            onClick={() => handleBookingAction(booking.id, 'reject')}
+                                        >
+                                            <XCircle className="h-4 w-4 mr-1" />
+                                            Decline
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            className="bg-green-600 hover:bg-green-700 text-white"
+                                            onClick={() => handleBookingAction(booking.id, 'confirm')}
+                                        >
+                                            <Check className="h-4 w-4 mr-1" />
+                                            Accept
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
 
                 <div className="grid gap-6 md:grid-cols-3">
                     {/* Quick Actions */}

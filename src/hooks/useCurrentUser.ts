@@ -77,6 +77,11 @@ export function useCurrentUser(): UseCurrentUserReturn {
 
             const userId = clerkUser.id
             const email = clerkUser.primaryEmailAddress?.emailAddress || ''
+
+            if (!email) {
+                console.warn('No email found in Clerk profile for this user.')
+            }
+
             const now = Timestamp.now()
 
             const newUser: User = {
@@ -88,6 +93,14 @@ export function useCurrentUser(): UseCurrentUserReturn {
                 defaultSessionMinutes: data.defaultSessionMinutes || 60,
                 bufferMinutes: data.bufferMinutes || 15,
                 bio: data.bio,
+                notificationSettings: {
+                    email: {
+                        newBookingRequest: false,
+                        bookingConfirmed: false,
+                        bookingDeclined: false,
+                        bookingCancelled: false,
+                    }
+                },
                 createdAt: now.toDate(),
                 updatedAt: now.toDate(),
             }

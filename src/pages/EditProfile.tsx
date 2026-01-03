@@ -288,6 +288,108 @@ export function EditProfile() {
                         </CardContent>
                     </Card>
 
+                    {/* Notification Settings */}
+                    <Card className="border-2">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <AlertTriangle className="h-5 w-5 text-primary" />
+                                Notification Preferences
+                            </CardTitle>
+                            <CardDescription>
+                                Manage how you want to be notified about bookings
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            {(user?.role === 'provider' || user?.role === 'both') && (
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">New Booking Requests</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Receive an email when a booker requests a session
+                                        </p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={user?.notificationSettings?.email?.newBookingRequest || false}
+                                        onChange={(e) => updateProfile({
+                                            notificationSettings: {
+                                                ...user?.notificationSettings,
+                                                email: {
+                                                    ...(user?.notificationSettings?.email || {
+                                                        newBookingRequest: false,
+                                                        bookingConfirmed: false,
+                                                        bookingDeclined: false,
+                                                        bookingCancelled: false,
+                                                    }),
+                                                    newBookingRequest: e.target.checked
+                                                }
+                                            }
+                                        })}
+                                    />
+                                </div>
+                            )}
+
+                            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                                <div className="space-y-0.5">
+                                    <Label className="text-base">Booking Cancellations</Label>
+                                    <p className="text-sm text-muted-foreground">
+                                        Receive an email if a confirmed booking is cancelled
+                                    </p>
+                                </div>
+                                <input
+                                    type="checkbox"
+                                    className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                    checked={user?.notificationSettings?.email?.bookingCancelled || false}
+                                    onChange={(e) => updateProfile({
+                                        notificationSettings: {
+                                            ...user?.notificationSettings,
+                                            email: {
+                                                ...(user?.notificationSettings?.email || {
+                                                    newBookingRequest: false,
+                                                    bookingConfirmed: false,
+                                                    bookingDeclined: false,
+                                                    bookingCancelled: false,
+                                                }),
+                                                bookingCancelled: e.target.checked
+                                            }
+                                        }
+                                    })}
+                                />
+                            </div>
+
+                            {(user?.role === 'booker' || user?.role === 'both') && (
+                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                                    <div className="space-y-0.5">
+                                        <Label className="text-base">Booking Declined</Label>
+                                        <p className="text-sm text-muted-foreground">
+                                            Receive an email if a provider declines your request
+                                        </p>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                        checked={user?.notificationSettings?.email?.bookingDeclined || false}
+                                        onChange={(e) => updateProfile({
+                                            notificationSettings: {
+                                                ...user?.notificationSettings,
+                                                email: {
+                                                    ...(user?.notificationSettings?.email || {
+                                                        newBookingRequest: false,
+                                                        bookingConfirmed: false,
+                                                        bookingDeclined: false,
+                                                        bookingCancelled: false,
+                                                    }),
+                                                    bookingDeclined: e.target.checked
+                                                }
+                                            }
+                                        })}
+                                    />
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
                     {/* Action Buttons */}
                     <div className="flex items-center gap-4">
                         <Button type="submit" className="flex-1 gap-2" disabled={isSaving}>

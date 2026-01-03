@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Search, ArrowLeft, X, AlertCircle, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, Search, ArrowLeft, X, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react'
 
 export function BookerDashboard() {
     const { user } = useCurrentUser()
@@ -98,13 +98,13 @@ export function BookerDashboard() {
         }
     }
 
-    // Separate upcoming and past bookings
+    // Separate upcoming and past/cancelled/rejected bookings
     const now = new Date()
     const upcomingBookings = bookings.filter(
-        (b) => b.startUTC > now && b.status !== 'cancelled'
+        (b) => b.startUTC > now && (b.status === 'confirmed' || b.status === 'pending')
     )
     const pastBookings = bookings.filter(
-        (b) => b.startUTC <= now || b.status === 'cancelled'
+        (b) => b.startUTC <= now || b.status === 'cancelled' || b.status === 'rejected'
     )
 
     return (
@@ -132,6 +132,25 @@ export function BookerDashboard() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Notifications Status Warning */}
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+                {!user?.notificationSettings?.email?.bookingDeclined && (
+                    <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 shrink-0" />
+                            <p className="text-sm">
+                                <strong>Notifications are Off:</strong> You won't be emailed when your requests are accepted or declined.
+                            </p>
+                        </div>
+                        <Link to="/edit-profile">
+                            <Button variant="outline" size="sm" className="border-amber-500/20 hover:bg-amber-500/10">
+                                Enable Notifications
+                            </Button>
+                        </Link>
+                    </div>
+                )}
             </div>
 
             {/* Main Content */}
@@ -195,7 +214,12 @@ export function BookerDashboard() {
                                                         </p>
                                                     </div>
                                                     <div className="text-right">
-                                                        {minutesUntil <= 60 ? (
+                                                        {booking.status === 'pending' ? (
+                                                            <div className="flex items-center gap-1 text-sm text-yellow-500 mb-2">
+                                                                <Clock className="h-4 w-4" />
+                                                                Pending confirmation
+                                                            </div>
+                                                        ) : minutesUntil <= 60 ? (
                                                             <div className="flex items-center gap-1 text-sm text-amber-500 mb-2">
                                                                 <AlertCircle className="h-4 w-4" />
                                                                 Starting soon
@@ -260,12 +284,12 @@ export function BookerDashboard() {
                                                     </p>
                                                 </div>
                                                 <div
-                                                    className={`text-sm px-2 py-1 rounded ${booking.status === 'cancelled'
+                                                    className={`text-sm px-2 py-1 rounded ${booking.status === 'cancelled' || booking.status === 'rejected'
                                                         ? 'bg-destructive/10 text-destructive'
                                                         : 'bg-muted text-muted-foreground'
                                                         }`}
                                                 >
-                                                    {booking.status === 'cancelled' ? 'Cancelled' : 'Completed'}
+                                                    {booking.status === 'cancelled' ? 'Cancelled' : booking.status === 'rejected' ? 'Declined' : 'Completed'}
                                                 </div>
                                             </div>
                                         ))}

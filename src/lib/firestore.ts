@@ -41,7 +41,7 @@ const userConverter: FirestoreDataConverter<User> = {
             timezone: user.timezone,
             defaultSessionMinutes: user.defaultSessionMinutes,
             bufferMinutes: user.bufferMinutes,
-            bio: user.bio || null,
+            notificationSettings: user.notificationSettings,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         }
@@ -57,6 +57,14 @@ const userConverter: FirestoreDataConverter<User> = {
             defaultSessionMinutes: data.defaultSessionMinutes || 60,
             bufferMinutes: data.bufferMinutes || 15,
             bio: data.bio || undefined,
+            notificationSettings: data.notificationSettings || {
+                email: {
+                    newBookingRequest: false,
+                    bookingConfirmed: false,
+                    bookingDeclined: false,
+                    bookingCancelled: false,
+                }
+            },
             createdAt: timestampToDate(data.createdAt),
             updatedAt: timestampToDate(data.updatedAt),
         }
