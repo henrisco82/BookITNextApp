@@ -37,19 +37,27 @@ export async function POST(req: Request) {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object as any
         
+        console.log('=== WEBHOOK RECEIVED ===')
+        console.log('Event type:', event.type)
+        console.log('Session ID:', session.id)
+        console.log('Payment Intent ID:', session.payment_intent)
+        console.log('Session metadata:', JSON.stringify(session.metadata, null, 2))
+        
         // FIXED: Try to get metadata from session first, then from payment intent
         let metadata = session.metadata
 
         // If session metadata is empty, fetch the payment intent to get its metadata
         if (!metadata || Object.keys(metadata).length === 0) {
-            console.log('Session metadata empty, fetching payment intent...')
+            console.log('⚠️ Session metadata empty, fetching payment intent...')
             try {
                 const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
                 metadata = paymentIntent.metadata
-                console.log('Retrieved metadata from payment intent:', metadata)
+                console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
             } catch (error) {
-                console.error('Error fetching payment intent:', error)
+                console.error('❌ Error fetching payment intent:', error)
             }
+        } else {
+            console.log('✓ Using session metadata')
         }
 
         if (metadata && metadata.providerId && metadata.bookerId) {
