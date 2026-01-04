@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { bookingDoc, setDoc, userDoc, getDoc } from '@/lib/firestore'
+import { bookingDoc, setDoc, userDoc, getDoc, usersCollection, query, where, getDocs, updateDoc } from '@/lib/firestore'
 import { sendProviderNotification } from '@/lib/email'
 import type { Booking } from '@/types'
 
@@ -65,6 +65,32 @@ export async function POST(req: Request) {
             } catch (error) {
                 console.error('Error processing checkout session:', error)
             }
+        }
+    } else if (event.type === 'account.updated') {
+        const account = event.data.object as { id: string, details_submitted: boolean }
+        console.log(`Stripe Account Updated: ${account.id}, details_submitted: ${account.details_submitted}`)
+
+        try {
+            // Find the user with this stripeAccountId
+            const q = query(usersCollection, where('stripeAccountId', '==', account.id))
+            const querySnapshot = await getDocs(q)
+
+            if (!querySnapshot.empty) {
+                const userDocSnap = querySnapshot.docs[0]
+                const userId = userDocSnap.id
+
+                if (account.details_submitted) {
+                    await updateDoc(userDoc(userId), {
+                        onboardingComplete: true,
+                        updatedAt: new Date()
+                    })
+                    console.log(`Updated onboardingComplete for user: ${userId}`)
+                }
+            } else {
+                console.warn(`No user found for Stripe account: ${account.id}`)
+            }
+        } catch (error) {
+            console.error('Error processing account update:', error)
         }
     }
 

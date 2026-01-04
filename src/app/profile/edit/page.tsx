@@ -22,7 +22,7 @@ export default function EditProfilePage() {
     const [formData, setFormData] = useState({
         displayName: '',
         bio: '',
-        pricePerSession: 0,
+        pricePerSession: '0',
     })
     const [passwords, setPasswords] = useState({
         current: '',
@@ -37,16 +37,23 @@ export default function EditProfilePage() {
             setFormData({
                 displayName: user.displayName || '',
                 bio: user.bio || '',
-                pricePerSession: user.pricePerSession || 0,
+                pricePerSession: user.pricePerSession?.toString() || '0',
             })
         }
     }, [user])
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
+        if (name === 'pricePerSession') {
+            // Only allow numbers and one decimal point
+            if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                setFormData(prev => ({ ...prev, [name]: value }))
+            }
+            return
+        }
         setFormData(prev => ({
             ...prev,
-            [name]: name === 'pricePerSession' ? Number(value) : value
+            [name]: value
         }))
     }
 
@@ -96,7 +103,9 @@ export default function EditProfilePage() {
             await updateProfile({
                 displayName: formData.displayName,
                 bio: formData.bio,
-                pricePerSession: (user.role === 'provider' || user.role === 'both') ? formData.pricePerSession : undefined
+                pricePerSession: (user.role === 'provider' || user.role === 'both')
+                    ? parseFloat(formData.pricePerSession) || 0
+                    : undefined
             })
             router.push('/dashboard')
         } catch (error) {
@@ -239,11 +248,11 @@ export default function EditProfilePage() {
                                     <Input
                                         id="pricePerSession"
                                         name="pricePerSession"
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         value={formData.pricePerSession}
                                         onChange={handleChange}
-                                        min={1}
-                                        step={1}
+                                        placeholder="0.00"
                                     />
                                 </div>
                             )}

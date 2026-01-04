@@ -20,11 +20,22 @@ export async function GET(request: Request) {
         // Retrieve the account from Stripe to check status
         const account = await stripe.accounts.retrieve(accountId)
 
+        console.log('Stripe Return Debug:', {
+            id: account.id,
+            details_submitted: account.details_submitted,
+            payouts_enabled: account.payouts_enabled,
+            charges_enabled: account.charges_enabled
+        })
+
         if (account.details_submitted) {
             // Update Firestore
             await updateDoc(userDoc(userId), {
                 onboardingComplete: true,
+                updatedAt: new Date()
             })
+            console.log('Successfully updated onboardingComplete in Firestore')
+        } else {
+            console.warn('User returned from Stripe but details_submitted is false')
         }
 
         // Redirect back to provider dashboard

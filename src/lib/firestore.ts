@@ -41,7 +41,12 @@ const userConverter: FirestoreDataConverter<User> = {
             timezone: user.timezone,
             defaultSessionMinutes: user.defaultSessionMinutes,
             bufferMinutes: user.bufferMinutes,
+            bio: user.bio ?? null,
             notificationSettings: user.notificationSettings,
+            stripeAccountId: user.stripeAccountId ?? null,
+            onboardingComplete: user.onboardingComplete ?? false,
+            pricePerSession: user.pricePerSession ?? 0,
+            imageUrl: user.imageUrl ?? null,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         }
@@ -65,6 +70,10 @@ const userConverter: FirestoreDataConverter<User> = {
                     bookingCancelled: false,
                 }
             },
+            stripeAccountId: data.stripeAccountId || undefined,
+            onboardingComplete: data.onboardingComplete || false,
+            pricePerSession: data.pricePerSession || 0,
+            imageUrl: data.imageUrl || undefined,
             createdAt: timestampToDate(data.createdAt),
             updatedAt: timestampToDate(data.updatedAt),
         }
