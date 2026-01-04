@@ -6,14 +6,14 @@ export async function GET(request: Request) {
     try {
         const { userId } = await auth()
         if (!userId) {
-            return new NextResponse('Unauthorized', { status: 401 })
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const { searchParams } = new URL(request.url)
         const accountId = searchParams.get('accountId')
 
         if (!accountId) {
-            return new NextResponse('Account ID missing', { status: 400 })
+            return NextResponse.json({ error: 'Account ID missing' }, { status: 400 })
         }
 
         const { origin } = new URL(request.url)
@@ -29,6 +29,6 @@ export async function GET(request: Request) {
         return NextResponse.redirect(accountLink.url)
     } catch (error: unknown) {
         console.error('Stripe Refresh Error:', error)
-        return new NextResponse((error as Error).message || 'Internal Server Error', { status: 500 })
+        return NextResponse.json({ error: (error as Error).message || 'Internal Server Error' }, { status: 500 })
     }
 }

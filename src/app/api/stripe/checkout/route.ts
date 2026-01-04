@@ -7,13 +7,13 @@ export async function POST(request: Request) {
     try {
         const { userId } = await auth()
         if (!userId) {
-            return new NextResponse('Unauthorized', { status: 401 })
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const { providerId, startUTC, endUTC, notes, price } = await request.json()
 
         if (!providerId || !startUTC || !endUTC || !price) {
-            return new NextResponse('Missing required fields', { status: 400 })
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
 
         // Get origin for redirect URLs
@@ -22,21 +22,21 @@ export async function POST(request: Request) {
         // Get user from Firestore
         const userSnap = await getDoc(userDoc(userId))
         if (!userSnap.exists()) {
-            return new NextResponse('User not found', { status: 404 })
+            return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
         const userData = userSnap.data()
 
         // Get provider's Stripe account ID
         const providerSnap = await getDoc(userDoc(providerId))
         if (!providerSnap.exists()) {
-            return new NextResponse('Provider not found', { status: 404 })
+            return NextResponse.json({ error: 'Provider not found' }, { status: 404 })
         }
 
         const providerData = providerSnap.data()
         const stripeAccountId = providerData.stripeAccountId
 
         if (!stripeAccountId) {
-            return new NextResponse('Provider has not connected Stripe', { status: 400 })
+            return NextResponse.json({ error: 'Provider has not connected Stripe' }, { status: 400 })
         }
 
         // Calculate application fee (1% = 0.01)
@@ -99,6 +99,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ url: session.url })
     } catch (error: unknown) {
         console.error('Stripe Checkout Error:', error)
-        return new NextResponse((error as Error).message || 'Internal Server Error', { status: 500 })
+        return NextResponse.json({ error: (error as Error).message || 'Internal Server Error' }, { status: 500 })
     }
 }

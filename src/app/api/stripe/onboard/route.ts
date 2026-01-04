@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     try {
         const { userId } = await auth()
         if (!userId) {
-            return new NextResponse('Unauthorized', { status: 401 })
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Get origin for redirect URLs
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
         // Get user from Firestore to check for existing stripeAccountId
         const userSnap = await getDoc(userDoc(userId))
         if (!userSnap.exists()) {
-            return new NextResponse('User not found', { status: 404 })
+            return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
         const userData = userSnap.data()
@@ -51,6 +51,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ url: accountLink.url })
     } catch (error: unknown) {
         console.error('Stripe Onboarding Error:', error)
-        return new NextResponse((error as Error).message || 'Internal Server Error', { status: 500 })
+        return NextResponse.json({ error: (error as Error).message || 'Internal Server Error' }, { status: 500 })
     }
 }
