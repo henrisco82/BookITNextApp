@@ -168,15 +168,26 @@ export default function ProviderDashboardPage() {
 
                 {/* Stripe Connection Warning */}
                 {!user?.onboardingComplete && (
-                    <div className="mb-6 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-500 flex items-center justify-between gap-4">
+                    <div className={`mb-6 p-4 rounded-lg border flex items-center justify-between gap-4 ${user?.stripeAccountId
+                            ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-500'
+                            : 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-500'
+                        }`}>
                         <div className="flex items-center gap-2">
                             <CreditCard className="h-5 w-5 shrink-0" />
-                            <p className="text-sm">
-                                <strong>Setup Payouts:</strong> To receive payments, you need to connect your Stripe account.
-                            </p>
+                            <div className="text-sm">
+                                {user?.stripeAccountId ? (
+                                    <>
+                                        <strong>Stripe account is being verified:</strong> Your account details are submitted, but Stripe is still enabling your account for payouts. This usually takes a few minutes.
+                                    </>
+                                ) : (
+                                    <>
+                                        <strong>Setup Payouts:</strong> To receive payments, you need to connect your Stripe account.
+                                    </>
+                                )}
+                            </div>
                         </div>
                         <Button
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className={user?.stripeAccountId ? 'bg-amber-600 hover:bg-amber-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}
                             size="sm"
                             onClick={async () => {
                                 try {
@@ -185,7 +196,7 @@ export default function ProviderDashboardPage() {
                                     if (data.url) {
                                         window.location.href = data.url;
                                     } else {
-                                        alert('Failed to get onboarding URL');
+                                        alert(data.error || 'Failed to get onboarding URL');
                                     }
                                 } catch (error) {
                                     console.error('Error connecting Stripe:', error);
@@ -193,7 +204,7 @@ export default function ProviderDashboardPage() {
                                 }
                             }}
                         >
-                            Connect Stripe
+                            {user?.stripeAccountId ? 'Check Status' : 'Connect Stripe'}
                         </Button>
                     </div>
                 )}

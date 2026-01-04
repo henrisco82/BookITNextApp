@@ -79,12 +79,15 @@ export async function POST(req: Request) {
                 const userDocSnap = querySnapshot.docs[0]
                 const userId = userDocSnap.id
 
-                if (account.details_submitted) {
+                const accountObj = event.data.object as { id: string, details_submitted: boolean, payouts_enabled: boolean }
+                if (accountObj.details_submitted && accountObj.payouts_enabled) {
                     await updateDoc(userDoc(userId), {
                         onboardingComplete: true,
                         updatedAt: new Date()
                     })
                     console.log(`Updated onboardingComplete for user: ${userId}`)
+                } else if (accountObj.details_submitted) {
+                    console.log(`Stripe account ${account.id} submitted details but payouts not yet enabled`)
                 }
             } else {
                 console.warn(`No user found for Stripe account: ${account.id}`)

@@ -27,13 +27,16 @@ export async function GET(request: Request) {
             charges_enabled: account.charges_enabled
         })
 
-        if (account.details_submitted) {
+        if (account.details_submitted && account.payouts_enabled) {
             // Update Firestore
             await updateDoc(userDoc(userId), {
                 onboardingComplete: true,
                 updatedAt: new Date()
             })
             console.log('Successfully updated onboardingComplete in Firestore')
+        } else if (account.details_submitted) {
+            console.log('Details submitted but payouts not yet enabled')
+            // We could set a "onboardingSubmitted: true" flag here if we wanted to show a custom state
         } else {
             console.warn('User returned from Stripe but details_submitted is false')
         }

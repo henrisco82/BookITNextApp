@@ -39,6 +39,14 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Provider has not connected Stripe' }, { status: 400 })
         }
 
+        // Verify Stripe account status in real-time
+        const account = await stripe.accounts.retrieve(stripeAccountId)
+        if (!account.payouts_enabled) {
+            return NextResponse.json({
+                error: 'Provider\'s Stripe account is not yet ready to receive payments. Their account setup may be pending verification.'
+            }, { status: 400 })
+        }
+
         // Calculate application fee (1% = 0.01)
         const amountInCents = Math.round(price * 100)
         const applicationFeeInCents = Math.max(Math.round(amountInCents * 0.01), 1)
