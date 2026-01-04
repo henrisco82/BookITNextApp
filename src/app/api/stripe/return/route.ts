@@ -28,7 +28,7 @@ export async function GET(request: Request) {
         }
 
         // Redirect back to provider dashboard
-        const origin = request.headers.get('origin') || 'http://localhost:3000'
+        const { origin } = new URL(request.url)
         return NextResponse.redirect(`${origin}/provider`)
     } catch (error: unknown) {
         console.error('Stripe Return Error:', error)

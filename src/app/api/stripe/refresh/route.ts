@@ -16,7 +16,7 @@ export async function GET(request: Request) {
             return new NextResponse('Account ID missing', { status: 400 })
         }
 
-        const origin = request.headers.get('origin') || 'http://localhost:3000'
+        const { origin } = new URL(request.url)
 
         // Re-create an account link
         const accountLink = await stripe.accountLinks.create({

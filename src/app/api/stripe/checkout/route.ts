@@ -17,7 +17,7 @@ export async function POST(request: Request) {
         }
 
         // Get origin for redirect URLs
-        const origin = request.headers.get('origin') || 'http://localhost:3000'
+        const { origin } = new URL(request.url)
 
         // Get user from Firestore
         const userSnap = await getDoc(userDoc(userId))

@@ -11,7 +11,7 @@ export async function POST(request: Request) {
         }
 
         // Get origin for redirect URLs
-        const origin = request.headers.get('origin') || 'http://localhost:3000'
+        const { origin } = new URL(request.url)
 
         // Get user from Firestore to check for existing stripeAccountId
         const userSnap = await getDoc(userDoc(userId))
