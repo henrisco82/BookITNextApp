@@ -35,10 +35,24 @@ export async function POST(req: Request) {
 
     // Handle the event
     if (event.type === 'checkout.session.completed') {
-        const session = event.data.object as { metadata: Record<string, string>, payment_intent: string }
-        const metadata = session.metadata
+        const session = event.data.object as any
+        
+        // FIXED: Try to get metadata from session first, then from payment intent
+        let metadata = session.metadata
 
-        if (metadata) {
+        // If session metadata is empty, fetch the payment intent to get its metadata
+        if (!metadata || Object.keys(metadata).length === 0) {
+            console.log('Session metadata empty, fetching payment intent...')
+            try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
+                metadata = paymentIntent.metadata
+                console.log('Retrieved metadata from payment intent:', metadata)
+            } catch (error) {
+                console.error('Error fetching payment intent:', error)
+            }
+        }
+
+        if (metadata && metadata.providerId && metadata.bookerId) {
             console.log('Webhook metadata received:', metadata)
             try {
                 if (!adminDb) {
@@ -69,6 +83,7 @@ export async function POST(req: Request) {
 
                 // Save to Firestore using Admin SDK
                 await adminDb.collection('bookings').doc(bookingId).set(bookingData)
+                console.log('✅ Booking created successfully:', bookingId)
 
                 // Send email notification to provider using Admin SDK for user fetch
                 const providerSnap = await adminDb.collection('users').doc(metadata.providerId).get()
@@ -80,7 +95,11 @@ export async function POST(req: Request) {
                 }
             } catch (error) {
                 console.error('Error processing checkout session:', error)
+                return new NextResponse('Error processing booking', { status: 500 })
             }
+        } else {
+            console.error('Missing required metadata in webhook:', metadata)
+            return new NextResponse('Missing metadata', { status: 400 })
         }
     } else if (event.type === 'account.updated') {
         const account = event.data.object as { id: string, details_submitted: boolean }
