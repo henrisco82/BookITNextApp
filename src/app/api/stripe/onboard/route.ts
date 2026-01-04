@@ -1,7 +1,12 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { userDoc, getDoc, updateDoc } from '@/lib/firestore'
+import { adminUserDoc } from '@/lib/firebase-admin'
+
+interface StripeUser {
+    email: string
+    stripeAccountId?: string
+}
 
 export async function POST(request: Request) {
     try {
@@ -14,12 +19,13 @@ export async function POST(request: Request) {
         const { origin } = new URL(request.url)
 
         // Get user from Firestore to check for existing stripeAccountId
-        const userSnap = await getDoc(userDoc(userId))
-        if (!userSnap.exists()) {
+        const userRef = adminUserDoc(userId)
+        const userSnap = await userRef.get()
+        if (!userSnap.exists) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
 
-        const userData = userSnap.data()
+        const userData = userSnap.data() as StripeUser
         let stripeAccountId = userData.stripeAccountId
 
         // Create a Stripe account if one doesn't exist
@@ -35,8 +41,9 @@ export async function POST(request: Request) {
             stripeAccountId = account.id
 
             // Save the stripeAccountId to Firestore
-            await updateDoc(userDoc(userId), {
+            await userRef.update({
                 stripeAccountId,
+                updatedAt: new Date()
             })
         }
 

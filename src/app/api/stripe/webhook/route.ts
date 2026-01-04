@@ -1,9 +1,18 @@
 import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { bookingDoc, setDoc, userDoc, getDoc, usersCollection, query, where, getDocs, updateDoc } from '@/lib/firestore'
+import { adminDb } from '@/lib/firebase-admin'
 import { sendProviderNotification } from '@/lib/email'
 import type { Booking } from '@/types'
+
+interface StripeUser {
+    email: string
+    notificationSettings?: {
+        email?: {
+            newBookingRequest?: boolean
+        }
+    }
+}
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
@@ -30,8 +39,15 @@ export async function POST(req: Request) {
         const metadata = session.metadata
 
         if (metadata) {
+            console.log('Webhook metadata received:', metadata)
             try {
+                if (!adminDb) {
+                    console.error('Webhook Error: adminDb is null. Check credentials.')
+                    throw new Error('Admin DB not initialized')
+                }
+
                 const bookingId = `${metadata.providerId}_${metadata.bookerId}_${Date.now()}`
+                console.log('Generating booking document:', bookingId)
 
                 const bookingData: Booking = {
                     id: bookingId,
@@ -51,13 +67,13 @@ export async function POST(req: Request) {
                     updatedAt: new Date(),
                 }
 
-                // Save to Firestore
-                await setDoc(bookingDoc(bookingId), bookingData)
+                // Save to Firestore using Admin SDK
+                await adminDb.collection('bookings').doc(bookingId).set(bookingData)
 
-                // Send email notification to provider
-                const providerSnap = await getDoc(userDoc(metadata.providerId))
-                if (providerSnap.exists()) {
-                    const providerData = providerSnap.data()
+                // Send email notification to provider using Admin SDK for user fetch
+                const providerSnap = await adminDb.collection('users').doc(metadata.providerId).get()
+                if (providerSnap.exists) {
+                    const providerData = providerSnap.data() as StripeUser
                     if (providerData.email && providerData.notificationSettings?.email?.newBookingRequest) {
                         await sendProviderNotification(bookingData, providerData.email)
                     }
@@ -71,9 +87,12 @@ export async function POST(req: Request) {
         console.log(`Stripe Account Updated: ${account.id}, details_submitted: ${account.details_submitted}`)
 
         try {
-            // Find the user with this stripeAccountId
-            const q = query(usersCollection, where('stripeAccountId', '==', account.id))
-            const querySnapshot = await getDocs(q)
+            if (!adminDb) throw new Error('Admin DB not initialized')
+
+            // Find the user with this stripeAccountId using Admin SDK
+            const querySnapshot = await adminDb.collection('users')
+                .where('stripeAccountId', '==', account.id)
+                .get()
 
             if (!querySnapshot.empty) {
                 const userDocSnap = querySnapshot.docs[0]
@@ -81,7 +100,7 @@ export async function POST(req: Request) {
 
                 const accountObj = event.data.object as { id: string, details_submitted: boolean, payouts_enabled: boolean }
                 if (accountObj.details_submitted && accountObj.payouts_enabled) {
-                    await updateDoc(userDoc(userId), {
+                    await userDocSnap.ref.update({
                         onboardingComplete: true,
                         updatedAt: new Date()
                     })

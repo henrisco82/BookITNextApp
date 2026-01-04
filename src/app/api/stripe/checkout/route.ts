@@ -1,7 +1,14 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { userDoc, getDoc } from '@/lib/firestore'
+import { adminUserDoc } from '@/lib/firebase-admin'
+
+interface StripeUser {
+    email: string
+    displayName: string
+    stripeAccountId?: string
+    defaultSessionMinutes?: number | string
+}
 
 export async function POST(request: Request) {
     try {
@@ -19,20 +26,22 @@ export async function POST(request: Request) {
         // Get origin for redirect URLs
         const { origin } = new URL(request.url)
 
-        // Get user from Firestore
-        const userSnap = await getDoc(userDoc(userId))
-        if (!userSnap.exists()) {
+        // Get user from Firestore using Admin SDK
+        const userRef = adminUserDoc(userId)
+        const userSnap = await userRef.get()
+        if (!userSnap.exists) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 })
         }
-        const userData = userSnap.data()
+        const userData = userSnap.data() as StripeUser
 
-        // Get provider's Stripe account ID
-        const providerSnap = await getDoc(userDoc(providerId))
-        if (!providerSnap.exists()) {
+        // Get provider's Stripe account ID using Admin SDK
+        const providerRef = adminUserDoc(providerId)
+        const providerSnap = await providerRef.get()
+        if (!providerSnap.exists) {
             return NextResponse.json({ error: 'Provider not found' }, { status: 404 })
         }
 
-        const providerData = providerSnap.data()
+        const providerData = providerSnap.data() as StripeUser
         const stripeAccountId = providerData.stripeAccountId
 
         if (!stripeAccountId) {
@@ -42,6 +51,13 @@ export async function POST(request: Request) {
         // Verify Stripe account status in real-time
         const account = await stripe.accounts.retrieve(stripeAccountId)
         if (!account.payouts_enabled) {
+            // If we found they aren't ready, update their status in Firestore
+            // so they see the warning on their dashboard
+            await providerRef.update({
+                onboardingComplete: false,
+                updatedAt: new Date()
+            })
+
             return NextResponse.json({
                 error: 'Provider\'s Stripe account is not yet ready to receive payments. Their account setup may be pending verification.'
             }, { status: 400 })
@@ -50,6 +66,13 @@ export async function POST(request: Request) {
         // Calculate application fee (1% = 0.01)
         const amountInCents = Math.round(price * 100)
         const applicationFeeInCents = Math.max(Math.round(amountInCents * 0.01), 1)
+
+        console.log('Creating Stripe Session with metadata:', {
+            providerId,
+            bookerId: userId,
+            startUTC,
+            price
+        })
 
         // Create Stripe Checkout Session
         const session = await stripe.checkout.sessions.create({
