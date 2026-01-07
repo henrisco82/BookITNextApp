@@ -15,16 +15,30 @@ interface StripeUser {
     }
 }
 
+interface BookingMetadata {
+    bookerId: string
+    bookerName: string
+    bookerEmail: string
+    providerId: string
+    providerName: string
+    providerEmail?: string
+    startUTC: string
+    endUTC: string
+    notes: string
+    price: string
+    sessionMinutes: string
+}
+
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(req: Request) {
     console.log('🎯 WEBHOOK HIT at:', new Date().toISOString())
-    
+
     try {
         // Read the raw body as text
         const rawBody = await req.text()
         const signature = req.headers.get('stripe-signature')
-        
+
         console.log('📦 Body length:', rawBody.length)
         console.log('🔑 Signature present:', !!signature)
 
@@ -56,31 +70,28 @@ export async function POST(req: Request) {
         // Handle the event
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as any
-            
+
             console.log('=== CHECKOUT SESSION COMPLETED ===')
             console.log('Event type:', event.type)
             console.log('Session ID:', session.id)
             console.log('Payment Intent ID:', session.payment_intent)
             console.log('Session metadata:', JSON.stringify(session.metadata, null, 2))
-            
-            // Try to get metadata from session first, then from payment intent
-            let metadata = session.metadata
 
-            // If session metadata is empty, fetch the payment intent to get its metadata
-            if (!metadata || Object.keys(metadata).length === 0) {
-                console.log('⚠️ Session metadata empty, fetching payment intent...')
-                try {
-                    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
-                    metadata = paymentIntent.metadata
-                    console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
-                } catch (error) {
-                    console.error('❌ Error fetching payment intent:', error)
-                }
-            } else {
-                console.log('✓ Using session metadata')
+            // Always fetch payment intent metadata as it's more reliable
+            let metadata: BookingMetadata | null = null
+            console.log('Fetching payment intent for metadata...')
+            try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
+                metadata = paymentIntent.metadata as unknown as BookingMetadata
+                console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
+            } catch (error) {
+                console.error('❌ Error fetching payment intent:', error)
+                // Fallback to session metadata if payment intent fetch fails
+                metadata = session.metadata as unknown as BookingMetadata
+                console.log('Falling back to session metadata:', JSON.stringify(metadata, null, 2))
             }
 
-            if (metadata && metadata.providerId && metadata.bookerId) {
+            if (metadata?.providerId && metadata?.bookerId) {
                 console.log('Processing booking with metadata:', metadata)
                 try {
                     if (!adminDb) {
@@ -127,8 +138,8 @@ export async function POST(req: Request) {
                         console.error('⚠️ Error sending email (non-critical):', emailError)
                         // Don't fail the webhook if email fails
                     }
-                    
-                    return new NextResponse(JSON.stringify({ received: true, bookingId }), { 
+
+                    return new NextResponse(JSON.stringify({ received: true, bookingId }), {
                         status: 200,
                         headers: { 'Content-Type': 'application/json' }
                     })
@@ -175,7 +186,7 @@ export async function POST(req: Request) {
                     console.warn(`⚠️ No user found for Stripe account: ${account.id}`)
                 }
 
-                return new NextResponse(JSON.stringify({ received: true }), { 
+                return new NextResponse(JSON.stringify({ received: true }), {
                     status: 200,
                     headers: { 'Content-Type': 'application/json' }
                 })
@@ -187,7 +198,7 @@ export async function POST(req: Request) {
 
         // For any other event types
         console.log(`ℹ️ Unhandled event type: ${event.type}`)
-        return new NextResponse(JSON.stringify({ received: true }), { 
+        return new NextResponse(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
         })
