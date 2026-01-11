@@ -49,6 +49,7 @@ export async function handleStripeWebhook(request: NextRequest) {
         const signature = request.headers.get('stripe-signature')
 
         console.log(`📦 Received payload size: ${rawBody.length} bytes`)
+        console.log(`📝 Body preview: ${rawBody.toString('utf8').substring(0, 50)}...`) // debug body
 
         if (!signature) {
             console.error('❌ Missing stripe-signature header')
@@ -61,7 +62,8 @@ export async function handleStripeWebhook(request: NextRequest) {
         }
 
         // Debug logging
-        console.log(`🔐 Verifying signature with secret: ${webhookSecret.substring(0, 5)}...`)
+        console.log(`🔐 Verifying signature with secret (len=${webhookSecret.length}): ${webhookSecret.substring(0, 5)}...`)
+        console.log(`🔑 Received signature (len=${signature.length}): ${signature.substring(0, 5)}...`)
 
         // Verify webhook signature
         event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
