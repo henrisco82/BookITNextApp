@@ -5,7 +5,6 @@ const isPublicRoute = createRouteMatcher([
   "/signup(.*)",
   "/forgot-password(.*)",
   "/verify-email(.*)",
-  "/api/stripe/webhook",         // 👈 add this
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -16,7 +15,8 @@ export default clerkMiddleware(async (auth, request) => {
 
 export const config = {
   matcher: [
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // 👇 EXCLUDE Stripe webhook COMPLETELY
+    '/((?!api/stripe/webhook|_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
 };
