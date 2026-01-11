@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
 export async function GET() {
     return NextResponse.json({
         status: 'ok',
-        message: 'Stripe webhook endpoint is active (stripe-webhook)',
+        message: 'Stripe webhook endpoint is active (stripe/webhook)',
         timestamp: new Date().toISOString()
     })
 }

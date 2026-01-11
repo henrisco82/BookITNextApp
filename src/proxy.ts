@@ -5,7 +5,8 @@ const isPublicRoute = createRouteMatcher([
   "/signup(.*)",
   "/forgot-password(.*)",
   "/verify-email(.*)",
-  "/api/stripe-webhook(.*)", // Stripe webhook must be public
+  "/api/stripe-webhook(.*)", // Stripe webhook (dash)
+  "/api/stripe/webhook(.*)", // Stripe webhook (slash)
 ]);
 
 export default clerkMiddleware(async (auth, request) => {
@@ -18,8 +19,8 @@ export default clerkMiddleware(async (auth, request) => {
 // 👇 Exclude Stripe webhook from middleware completely
 export const config = {
   matcher: [
-    // Protect everything EXCEPT Stripe webhook, _next, static files, etc.
-    '/((?!api/stripe-webhook|_next|.*\\.(?:js|css|png|jpg|jpeg|svg|ico|woff2?|webp|json|map|html)).*)',
+    // Protect everything EXCEPT Stripe webhooks, _next, static files, etc.
+    '/((?!api/stripe-webhook|api/stripe/webhook|_next|.*\\.(?:js|css|png|jpg|jpeg|svg|ico|woff2?|webp|json|map|html)).*)',
   ],
 };
 
