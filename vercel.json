@@ -1,8 +1,7 @@
 {
-    "functions": {
-      "api/stripe-webhook.ts": {
-        "memory": 1024,
-        "maxDuration": 10
-      }
+  "functions": {
+    "src/app/api/stripe-webhook/route.ts": {
+      "maxDuration": 10
     }
+  }
 }
