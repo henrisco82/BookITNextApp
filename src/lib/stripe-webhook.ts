@@ -44,8 +44,11 @@ export async function handleStripeWebhook(request: NextRequest) {
 
     try {
         // Get raw body for signature verification
-        const rawBody = await request.text()
+        const arrayBuffer = await request.arrayBuffer()
+        const rawBody = Buffer.from(arrayBuffer)
         const signature = request.headers.get('stripe-signature')
+
+        console.log(`📦 Received payload size: ${rawBody.length} bytes`)
 
         if (!signature) {
             console.error('❌ Missing stripe-signature header')
@@ -56,6 +59,9 @@ export async function handleStripeWebhook(request: NextRequest) {
             console.error('❌ STRIPE_WEBHOOK_SECRET not configured')
             return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
         }
+
+        // Debug logging
+        console.log(`🔐 Verifying signature with secret: ${webhookSecret.substring(0, 5)}...`)
 
         // Verify webhook signature
         event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
