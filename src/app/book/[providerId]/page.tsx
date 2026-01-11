@@ -34,9 +34,21 @@ import { ArrowLeft, Calendar, Clock, ChevronLeft, ChevronRight, Globe, Image as 
 
 export default function BookingPage() {
     const params = useParams()
-    const providerId = params.providerId as string
+    const providerId = params?.providerId as string
     const router = useRouter()
     const { user: currentUser } = useCurrentUser()
+
+    // Handle case where params haven't loaded yet
+    if (!providerId) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Loading...</h1>
+                    <p className="text-gray-600">Please wait while we load the booking page.</p>
+                </div>
+            </div>
+        )
+    }
 
     // Provider data
     const [provider, setProvider] = useState<User | null>(null)
