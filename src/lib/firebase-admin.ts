@@ -39,3 +39,11 @@ export const adminUserDoc = (userId: string) => {
     }
     return adminDb.collection('users').doc(userId)
 }
+
+// Helper for bookings collection
+export const adminBookingsCollection = () => {
+    if (!adminDb) {
+        throw new Error('Firebase Admin DB not initialized. Check your environment variables.')
+    }
+    return adminDb.collection('bookings')
+}
