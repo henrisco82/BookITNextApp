@@ -7,204 +7,161 @@ import type { Booking } from '@/types'
 export const runtime = 'nodejs'
 
 interface StripeUser {
-    email: string
-    notificationSettings?: {
-        email?: {
-            newBookingRequest?: boolean
-        }
+  email: string
+  notificationSettings?: {
+    email?: {
+      newBookingRequest?: boolean
     }
+  }
 }
 
 interface BookingMetadata {
-    bookerId: string
-    bookerName: string
-    bookerEmail: string
-    providerId: string
-    providerName: string
-    providerEmail?: string
-    startUTC: string
-    endUTC: string
-    notes: string
-    price: string
-    sessionMinutes: string
+  bookerId: string
+  bookerName: string
+  bookerEmail: string
+  providerId: string
+  providerName: string
+  providerEmail?: string
+  startUTC: string
+  endUTC: string
+  notes: string
+  price: string
+  sessionMinutes: string
 }
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
 export async function POST(req: Request) {
-    console.log('🎯 WEBHOOK HIT at:', new Date().toISOString())
+  console.log('🎯 WEBHOOK HIT at:', new Date().toISOString())
 
-    try {
-        // Read the raw body as text
-        const rawBody = await req.text()
-        const signature = req.headers.get('stripe-signature')
+  try {
+    // Read raw body
+    const rawBody = await req.text()
+    const signature = req.headers.get('stripe-signature')
 
-        console.log('📦 Body length:', rawBody.length)
-        console.log('🔑 Signature present:', !!signature)
-
-        if (!signature) {
-            console.error('❌ No signature found')
-            return new NextResponse('No signature', { status: 400 })
-        }
-
-        if (!webhookSecret) {
-            console.error('❌ STRIPE_WEBHOOK_SECRET is missing')
-            return new NextResponse('Webhook secret not configured', { status: 500 })
-        }
-
-        // Construct event from raw body string
-        let event
-        try {
-            event = stripe.webhooks.constructEvent(
-                rawBody,
-                signature,
-                webhookSecret
-            )
-            console.log('✅ Webhook signature verified')
-        } catch (err: unknown) {
-            const message = (err as Error).message
-            console.error(`❌ Webhook signature verification failed: ${message}`)
-            return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
-        }
-
-        // Handle the event
-        if (event.type === 'checkout.session.completed') {
-            const session = event.data.object as any
-
-            console.log('=== CHECKOUT SESSION COMPLETED ===')
-            console.log('Event type:', event.type)
-            console.log('Session ID:', session.id)
-            console.log('Payment Intent ID:', session.payment_intent)
-            console.log('Session metadata:', JSON.stringify(session.metadata, null, 2))
-
-            // Always fetch payment intent metadata as it's more reliable
-            let metadata: BookingMetadata | null = null
-            console.log('Fetching payment intent for metadata...')
-            try {
-                const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
-                metadata = paymentIntent.metadata as unknown as BookingMetadata
-                console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
-            } catch (error) {
-                console.error('❌ Error fetching payment intent:', error)
-                // Fallback to session metadata if payment intent fetch fails
-                metadata = session.metadata as unknown as BookingMetadata
-                console.log('Falling back to session metadata:', JSON.stringify(metadata, null, 2))
-            }
-
-            if (metadata?.providerId && metadata?.bookerId) {
-                console.log('Processing booking with metadata:', metadata)
-                try {
-                    if (!adminDb) {
-                        console.error('❌ adminDb is null. Check Firebase Admin credentials.')
-                        return new NextResponse('Database not initialized', { status: 500 })
-                    }
-
-                    const bookingId = `${metadata.providerId}_${metadata.bookerId}_${Date.now()}`
-                    console.log('Creating booking document:', bookingId)
-
-                    const bookingData: Booking = {
-                        id: bookingId,
-                        providerId: metadata.providerId,
-                        providerName: metadata.providerName,
-                        bookerId: metadata.bookerId,
-                        bookerName: metadata.bookerName,
-                        bookerEmail: metadata.bookerEmail,
-                        startUTC: new Date(metadata.startUTC),
-                        endUTC: new Date(metadata.endUTC),
-                        status: 'pending',
-                        sessionMinutes: parseInt(metadata.sessionMinutes || '60'),
-                        notes: metadata.notes || undefined,
-                        paymentIntentId: session.payment_intent as string,
-                        priceAtBooking: parseFloat(metadata.price || '0'),
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                    }
-
-                    // Save to Firestore using Admin SDK
-                    await adminDb.collection('bookings').doc(bookingId).set(bookingData)
-                    console.log('✅ Booking created successfully in Firestore:', bookingId)
-
-                    // Send email notification to provider
-                    try {
-                        const providerSnap = await adminDb.collection('users').doc(metadata.providerId).get()
-                        if (providerSnap.exists) {
-                            const providerData = providerSnap.data() as StripeUser
-                            if (providerData.email && providerData.notificationSettings?.email?.newBookingRequest) {
-                                await sendProviderNotification(bookingData, providerData.email)
-                                console.log('✅ Email notification sent to provider')
-                            }
-                        }
-                    } catch (emailError) {
-                        console.error('⚠️ Error sending email (non-critical):', emailError)
-                        // Don't fail the webhook if email fails
-                    }
-
-                    return new NextResponse(JSON.stringify({ received: true, bookingId }), {
-                        status: 200,
-                        headers: { 'Content-Type': 'application/json' }
-                    })
-                } catch (error) {
-                    console.error('❌ Error processing checkout session:', error)
-                    return new NextResponse(`Error processing booking: ${error}`, { status: 500 })
-                }
-            } else {
-                console.error('❌ Missing required metadata. Received:', metadata)
-                return new NextResponse('Missing required metadata (providerId or bookerId)', { status: 400 })
-            }
-        } else if (event.type === 'account.updated') {
-            const account = event.data.object as { id: string, details_submitted: boolean, payouts_enabled: boolean }
-            console.log(`=== ACCOUNT UPDATED ===`)
-            console.log(`Account ID: ${account.id}`)
-            console.log(`Details submitted: ${account.details_submitted}`)
-            console.log(`Payouts enabled: ${account.payouts_enabled}`)
-
-            try {
-                if (!adminDb) {
-                    console.error('❌ adminDb is null')
-                    return new NextResponse('Database not initialized', { status: 500 })
-                }
-
-                // Find the user with this stripeAccountId
-                const querySnapshot = await adminDb.collection('users')
-                    .where('stripeAccountId', '==', account.id)
-                    .get()
-
-                if (!querySnapshot.empty) {
-                    const userDocSnap = querySnapshot.docs[0]
-                    const userId = userDocSnap.id
-
-                    if (account.details_submitted && account.payouts_enabled) {
-                        await userDocSnap.ref.update({
-                            onboardingComplete: true,
-                            updatedAt: new Date()
-                        })
-                        console.log(`✅ Updated onboardingComplete=true for user: ${userId}`)
-                    } else if (account.details_submitted) {
-                        console.log(`⚠️ Account ${account.id} submitted details but payouts not yet enabled`)
-                    }
-                } else {
-                    console.warn(`⚠️ No user found for Stripe account: ${account.id}`)
-                }
-
-                return new NextResponse(JSON.stringify({ received: true }), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' }
-                })
-            } catch (error) {
-                console.error('❌ Error processing account update:', error)
-                return new NextResponse(`Error processing account update: ${error}`, { status: 500 })
-            }
-        }
-
-        // For any other event types
-        console.log(`ℹ️ Unhandled event type: ${event.type}`)
-        return new NextResponse(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' }
-        })
-
-    } catch (error) {
-        console.error('❌ Webhook error:', error)
-        return new NextResponse(`Webhook error: ${error}`, { status: 500 })
+    if (!signature) {
+      console.error('❌ No Stripe signature')
+      return new NextResponse('No signature', { status: 400 })
     }
+    if (!webhookSecret) {
+      console.error('❌ STRIPE_WEBHOOK_SECRET missing')
+      return new NextResponse('Webhook secret not configured', { status: 500 })
+    }
+
+    // Verify webhook signature
+    let event
+    try {
+      event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret)
+      console.log('✅ Stripe signature verified')
+    } catch (err: unknown) {
+      console.error('❌ Webhook signature verification failed', err)
+      return new NextResponse(`Webhook Error: ${(err as Error).message}`, { status: 400 })
+    }
+
+    // Handle events
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as any
+      let metadata: BookingMetadata | null = null
+
+      // Try fetching payment intent metadata (more reliable)
+      try {
+        const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent)
+        metadata = paymentIntent.metadata as unknown as BookingMetadata
+      } catch {
+        metadata = session.metadata as unknown as BookingMetadata
+      }
+
+      if (!metadata?.providerId || !metadata?.bookerId) {
+        console.error('❌ Missing providerId or bookerId in metadata', metadata)
+        return new NextResponse('Missing required metadata', { status: 400 })
+      }
+
+      const bookingId = `${metadata.providerId}_${metadata.bookerId}_${Date.now()}`
+      const bookingData: Booking = {
+        id: bookingId,
+        providerId: metadata.providerId,
+        providerName: metadata.providerName,
+        bookerId: metadata.bookerId,
+        bookerName: metadata.bookerName,
+        bookerEmail: metadata.bookerEmail,
+        startUTC: new Date(metadata.startUTC),
+        endUTC: new Date(metadata.endUTC),
+        status: 'pending',
+        sessionMinutes: parseInt(metadata.sessionMinutes || '60'),
+        notes: metadata.notes || undefined,
+        paymentIntentId: session.payment_intent as string,
+        priceAtBooking: parseFloat(metadata.price || '0'),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+
+      // Save to Firestore
+      if (!adminDb) {
+        console.error('❌ Firebase Admin not initialized')
+        return new NextResponse('Database not initialized', { status: 500 })
+      }
+      await adminDb.collection('bookings').doc(bookingId).set(bookingData)
+      console.log('✅ Booking saved:', bookingId)
+
+      // Send email notification to provider
+      try {
+        const providerSnap = await adminDb.collection('users').doc(metadata.providerId).get()
+        if (providerSnap.exists) {
+          const providerData = providerSnap.data() as StripeUser
+          if (providerData.email && providerData.notificationSettings?.email?.newBookingRequest) {
+            await sendProviderNotification(bookingData, providerData.email)
+            console.log('✅ Provider notified via email')
+          }
+        }
+      } catch (emailErr) {
+        console.warn('⚠️ Failed to send email, but booking still created:', emailErr)
+      }
+
+      return new NextResponse(JSON.stringify({ received: true, bookingId }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    else if (event.type === 'account.updated') {
+      const account = event.data.object as {
+        id: string
+        details_submitted: boolean
+        payouts_enabled: boolean
+      }
+      console.log('=== ACCOUNT UPDATED ===', account.id)
+
+      try {
+        if (!adminDb) throw new Error('Firebase Admin not initialized')
+
+        const querySnap = await adminDb.collection('users')
+          .where('stripeAccountId', '==', account.id)
+          .get()
+
+        if (!querySnap.empty) {
+          const userDoc = querySnap.docs[0]
+          if (account.details_submitted && account.payouts_enabled) {
+            await userDoc.ref.update({ onboardingComplete: true, updatedAt: new Date() })
+            console.log('✅ User onboardingComplete updated:', userDoc.id)
+          } else {
+            console.log(`⚠️ Account ${account.id} submitted details but payouts not enabled`)
+          }
+        } else {
+          console.warn(`⚠️ No user found for Stripe account: ${account.id}`)
+        }
+
+        return new NextResponse(JSON.stringify({ received: true }), { status: 200 })
+      } catch (err) {
+        console.error('❌ Error processing account.updated:', err)
+        return new NextResponse(`Error: ${err}`, { status: 500 })
+      }
+    }
+
+    console.log(`ℹ️ Unhandled event type: ${event.type}`)
+    return new NextResponse(JSON.stringify({ received: true }), { status: 200 })
+
+  } catch (err) {
+    console.error('❌ Webhook error:', err)
+    return new NextResponse(`Webhook error: ${err}`, { status: 500 })
+  }
 }
