@@ -9,6 +9,7 @@ import { formatInTimezone, formatTimeInTimezone, canCancelBooking, getMinutesUnt
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
 import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X } from 'lucide-react'
 
@@ -17,6 +18,7 @@ export default function BookerDashboardPage() {
     const [bookings, setBookings] = useState<Booking[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [cancellingId, setCancellingId] = useState<string | null>(null)
+    const { confirm, ConfirmDialog } = useConfirmDialog()
 
     // Fetch bookings
     useEffect(() => {
@@ -58,7 +60,15 @@ export default function BookerDashboardPage() {
             return
         }
 
-        if (!confirm('Are you sure you want to cancel this booking? You will receive a refund minus the platform fee.')) return
+        const confirmed = await confirm({
+            title: 'Cancel Booking',
+            description: 'Are you sure you want to cancel this booking? You will receive a refund minus the platform fee.',
+            confirmLabel: 'Yes, Cancel Booking',
+            cancelLabel: 'Keep Booking',
+            variant: 'destructive',
+        })
+
+        if (!confirmed) return
 
         setCancellingId(booking.id)
         try {
@@ -113,6 +123,8 @@ export default function BookerDashboardPage() {
     )
 
     return (
+        <>
+        {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -306,5 +318,6 @@ export default function BookerDashboardPage() {
                 )}
             </div>
         </div>
+        </>
     )
 }

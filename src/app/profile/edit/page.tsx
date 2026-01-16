@@ -12,12 +12,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro } from 'lucide-react'
 
 export default function EditProfilePage() {
     const router = useRouter()
     const { user, updateProfile, isLoading, imageUrl, setProfileImage } = useCurrentUser()
     const { signOut, changePassword } = useAuth()
+    const { confirm, ConfirmDialog } = useConfirmDialog()
 
     const [formData, setFormData] = useState({
         displayName: '',
@@ -119,17 +121,25 @@ export default function EditProfilePage() {
     const handleDeleteAccount = async () => {
         if (!user) return
 
-        const confirmed = window.confirm(
-            'Are you sure you want to delete your account? This action cannot be undone and will remove all your data.'
-        )
+        const firstConfirm = await confirm({
+            title: 'Delete Account',
+            description: 'Are you sure you want to delete your account? This action cannot be undone and will remove all your data.',
+            confirmLabel: 'Yes, Delete My Account',
+            cancelLabel: 'Cancel',
+            variant: 'destructive',
+        })
 
-        if (!confirmed) return
+        if (!firstConfirm) return
 
-        const doubleConfirmed = window.confirm(
-            'Please confirm again: Do you really want to delete your account?'
-        )
+        const secondConfirm = await confirm({
+            title: 'Final Confirmation',
+            description: 'This is your last chance to cancel. Are you absolutely sure you want to permanently delete your account?',
+            confirmLabel: 'Delete Permanently',
+            cancelLabel: 'Keep My Account',
+            variant: 'destructive',
+        })
 
-        if (!doubleConfirmed) return
+        if (!secondConfirm) return
 
         setIsDeleting(true)
         try {

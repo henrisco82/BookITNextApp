@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { ArrowLeft, Image as ImageIcon, Plus, Trash2, X, Loader2 } from 'lucide-react'
 import type { PortfolioItem } from '@/types'
 
@@ -30,6 +31,7 @@ export default function ProviderPortfolioPage() {
     const [newItem, setNewItem] = useState({ title: '', description: '' })
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
     const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+    const { confirm, ConfirmDialog } = useConfirmDialog()
 
     // Fetch portfolio items
     useEffect(() => {
@@ -111,7 +113,15 @@ export default function ProviderPortfolioPage() {
     }
 
     const handleDelete = async (itemId: string) => {
-        if (!confirm('Are you sure you want to delete this specific portfolio item?')) return
+        const confirmed = await confirm({
+            title: 'Delete Portfolio Item',
+            description: 'Are you sure you want to delete this portfolio item? This action cannot be undone.',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Cancel',
+            variant: 'destructive',
+        })
+
+        if (!confirmed) return
 
         try {
             await deleteDoc(portfolioDoc(itemId))
@@ -131,6 +141,8 @@ export default function ProviderPortfolioPage() {
     }
 
     return (
+        <>
+        {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -298,6 +310,7 @@ export default function ProviderPortfolioPage() {
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
+        </>
     )
 }

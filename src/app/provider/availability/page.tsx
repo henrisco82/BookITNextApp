@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Availability } from '@/types'
 import { ArrowLeft, Plus, Trash2, Calendar, Clock, X } from 'lucide-react'
 
@@ -34,6 +35,7 @@ export default function ProviderAvailabilityPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [showAddModal, setShowAddModal] = useState(false)
     const [showExclusionModal, setShowExclusionModal] = useState(false)
+    const { confirm, ConfirmDialog } = useConfirmDialog()
 
     // Form state for new availability
     const [selectedWeekday, setSelectedWeekday] = useState(1) // Monday
@@ -134,7 +136,15 @@ export default function ProviderAvailabilityPage() {
 
     // Delete availability
     const handleDeleteAvailability = async (id: string) => {
-        if (!confirm('Delete this availability block?')) return
+        const confirmed = await confirm({
+            title: 'Delete Availability',
+            description: 'Are you sure you want to delete this availability block?',
+            confirmLabel: 'Delete',
+            cancelLabel: 'Cancel',
+            variant: 'destructive',
+        })
+
+        if (!confirmed) return
 
         try {
             await deleteDoc(availabilityDoc(id))
@@ -163,6 +173,8 @@ export default function ProviderAvailabilityPage() {
     }))
 
     return (
+        <>
+        {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -410,5 +422,6 @@ export default function ProviderAvailabilityPage() {
                 </div>
             )}
         </div>
+        </>
     )
 }
