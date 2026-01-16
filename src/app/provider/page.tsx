@@ -25,7 +25,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { sendBookerNotification } from '@/lib/email'
 
 export default function ProviderDashboardPage() {
-    const { user } = useCurrentUser()
+    const { user, isLoading: isUserLoading } = useCurrentUser()
     const { signOut } = useAuth()
     const router = useRouter()
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
@@ -167,7 +167,7 @@ export default function ProviderDashboardPage() {
                 </div>
 
                 {/* Stripe Connection Warning */}
-                {!user?.onboardingComplete && (
+                {!isUserLoading && user && !user.onboardingComplete && (
                     <div className={`mb-6 p-4 rounded-lg border flex items-center justify-between gap-4 ${user?.stripeAccountId
                             ? 'bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-500'
                             : 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-500'
