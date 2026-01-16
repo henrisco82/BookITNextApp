@@ -6,6 +6,7 @@ const isPublicRoute = createRouteMatcher([
   "/forgot-password(.*)",
   "/verify-email(.*)",
   "/api/stripe/webhook",         // 👈 add this
+  "/api/bookings/(.*)",          // For verifying bookings exist
 ]);
 
 export default clerkMiddleware(async (auth, request) => {

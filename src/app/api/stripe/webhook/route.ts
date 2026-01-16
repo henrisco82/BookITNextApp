@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { adminDb } from '@/lib/firebase-admin'
 import { sendProviderNotification } from '@/lib/email'
+import { Timestamp } from 'firebase-admin/firestore'
 import type { Booking } from '@/types'
 
 export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
 
 interface StripeUser {
     email: string
@@ -38,33 +40,47 @@ export async function POST(req: Request) {
         // Read the raw body as text
         const rawBody = await req.text()
         const signature = req.headers.get('stripe-signature')
+        const isTestMode = signature === 'test-signature' && process.env.NODE_ENV !== 'production'
 
         console.log('📦 Body length:', rawBody.length)
         console.log('🔑 Signature present:', !!signature)
+        console.log('🧪 Test mode:', isTestMode)
 
-        if (!signature) {
-            console.error('❌ No signature found')
-            return new NextResponse('No signature', { status: 400 })
-        }
-
-        if (!webhookSecret) {
-            console.error('❌ STRIPE_WEBHOOK_SECRET is missing')
-            return new NextResponse('Webhook secret not configured', { status: 500 })
-        }
-
-        // Construct event from raw body string
         let event
-        try {
-            event = stripe.webhooks.constructEvent(
-                rawBody,
-                signature,
-                webhookSecret
-            )
-            console.log('✅ Webhook signature verified')
-        } catch (err: unknown) {
-            const message = (err as Error).message
-            console.error(`❌ Webhook signature verification failed: ${message}`)
-            return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
+
+        // Allow test mode in development
+        if (isTestMode) {
+            console.log('⚠️ Running in TEST MODE - signature verification bypassed')
+            try {
+                event = JSON.parse(rawBody)
+            } catch (err) {
+                console.error('❌ Failed to parse test event JSON')
+                return new NextResponse('Invalid JSON', { status: 400 })
+            }
+        } else {
+            if (!signature) {
+                console.error('❌ No signature found')
+                return new NextResponse('No signature', { status: 400 })
+            }
+
+            if (!webhookSecret) {
+                console.error('❌ STRIPE_WEBHOOK_SECRET is missing')
+                return new NextResponse('Webhook secret not configured', { status: 500 })
+            }
+
+            // Construct event from raw body string
+            try {
+                event = stripe.webhooks.constructEvent(
+                    rawBody,
+                    signature,
+                    webhookSecret
+                )
+                console.log('✅ Webhook signature verified')
+            } catch (err: unknown) {
+                const message = (err as Error).message
+                console.error(`❌ Webhook signature verification failed: ${message}`)
+                return new NextResponse(`Webhook Error: ${message}`, { status: 400 })
+            }
         }
 
         // Handle the event
@@ -77,18 +93,24 @@ export async function POST(req: Request) {
             console.log('Payment Intent ID:', session.payment_intent)
             console.log('Session metadata:', JSON.stringify(session.metadata, null, 2))
 
-            // Always fetch payment intent metadata as it's more reliable
+            // Get metadata - in test mode use session metadata directly, otherwise fetch from payment intent
             let metadata: BookingMetadata | null = null
-            console.log('Fetching payment intent for metadata...')
-            try {
-                const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
-                metadata = paymentIntent.metadata as unknown as BookingMetadata
-                console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
-            } catch (error) {
-                console.error('❌ Error fetching payment intent:', error)
-                // Fallback to session metadata if payment intent fetch fails
+
+            if (isTestMode) {
+                console.log('🧪 Test mode: Using session metadata directly')
                 metadata = session.metadata as unknown as BookingMetadata
-                console.log('Falling back to session metadata:', JSON.stringify(metadata, null, 2))
+            } else {
+                console.log('Fetching payment intent for metadata...')
+                try {
+                    const paymentIntent = await stripe.paymentIntents.retrieve(session.payment_intent as string)
+                    metadata = paymentIntent.metadata as unknown as BookingMetadata
+                    console.log('✓ Retrieved metadata from payment intent:', JSON.stringify(metadata, null, 2))
+                } catch (error) {
+                    console.error('❌ Error fetching payment intent:', error)
+                    // Fallback to session metadata if payment intent fetch fails
+                    metadata = session.metadata as unknown as BookingMetadata
+                    console.log('Falling back to session metadata:', JSON.stringify(metadata, null, 2))
+                }
             }
 
             if (metadata?.providerId && metadata?.bookerId) {
@@ -102,26 +124,29 @@ export async function POST(req: Request) {
                     const bookingId = `${metadata.providerId}_${metadata.bookerId}_${Date.now()}`
                     console.log('Creating booking document:', bookingId)
 
-                    const bookingData: Booking = {
+                    // Use Firestore Timestamps for reliable date serialization
+                    const bookingDataForFirestore = {
                         id: bookingId,
                         providerId: metadata.providerId,
                         providerName: metadata.providerName,
                         bookerId: metadata.bookerId,
                         bookerName: metadata.bookerName,
                         bookerEmail: metadata.bookerEmail,
-                        startUTC: new Date(metadata.startUTC),
-                        endUTC: new Date(metadata.endUTC),
+                        startUTC: Timestamp.fromDate(new Date(metadata.startUTC)),
+                        endUTC: Timestamp.fromDate(new Date(metadata.endUTC)),
                         status: 'pending',
                         sessionMinutes: parseInt(metadata.sessionMinutes || '60'),
                         notes: metadata.notes || undefined,
                         paymentIntentId: session.payment_intent as string,
                         priceAtBooking: parseFloat(metadata.price || '0'),
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
+                        createdAt: Timestamp.now(),
+                        updatedAt: Timestamp.now(),
                     }
 
+                    console.log('Booking data to save:', JSON.stringify(bookingDataForFirestore, null, 2))
+
                     // Save to Firestore using Admin SDK
-                    await adminDb.collection('bookings').doc(bookingId).set(bookingData)
+                    await adminDb.collection('bookings').doc(bookingId).set(bookingDataForFirestore)
                     console.log('✅ Booking created successfully in Firestore:', bookingId)
 
                     // Send email notification to provider
@@ -130,7 +155,25 @@ export async function POST(req: Request) {
                         if (providerSnap.exists) {
                             const providerData = providerSnap.data() as StripeUser
                             if (providerData.email && providerData.notificationSettings?.email?.newBookingRequest) {
-                                await sendProviderNotification(bookingData, providerData.email)
+                                // Convert to Booking type with Date objects for email function
+                                const bookingForEmail: Booking = {
+                                    id: bookingId,
+                                    providerId: metadata.providerId,
+                                    providerName: metadata.providerName,
+                                    bookerId: metadata.bookerId,
+                                    bookerName: metadata.bookerName,
+                                    bookerEmail: metadata.bookerEmail,
+                                    startUTC: new Date(metadata.startUTC),
+                                    endUTC: new Date(metadata.endUTC),
+                                    status: 'pending',
+                                    sessionMinutes: parseInt(metadata.sessionMinutes || '60'),
+                                    notes: metadata.notes || undefined,
+                                    paymentIntentId: session.payment_intent as string,
+                                    priceAtBooking: parseFloat(metadata.price || '0'),
+                                    createdAt: new Date(),
+                                    updatedAt: new Date(),
+                                }
+                                await sendProviderNotification(bookingForEmail, providerData.email)
                                 console.log('✅ Email notification sent to provider')
                             }
                         }
