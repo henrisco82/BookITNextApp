@@ -45,7 +45,10 @@ export function useCurrentUser(): UseCurrentUserReturn {
             if (doc.exists()) {
                 const userData = doc.data() as User
                 setInnerUser(userData)
-                setInnerNeedsProfileSetup(!userData.onboardingComplete)
+                // Profile setup is needed if essential fields are missing (role, displayName)
+                // Note: onboardingComplete is for Stripe, not profile setup
+                const hasRequiredProfileFields = !!(userData.role && userData.displayName)
+                setInnerNeedsProfileSetup(!hasRequiredProfileFields)
             } else {
                 setInnerUser(null)
                 setInnerNeedsProfileSetup(true)

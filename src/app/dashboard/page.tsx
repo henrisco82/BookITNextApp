@@ -1,6 +1,7 @@
 'use client'
 
 // Main Dashboard - role-aware landing page with navigation
+import { useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -23,10 +24,17 @@ import {
 
 export default function DashboardPage() {
     const { signOut } = useAuth()
-    const { user: firestoreUser, isLoading, imageUrl } = useCurrentUser()
+    const { user: firestoreUser, isLoading, imageUrl, needsProfileSetup } = useCurrentUser()
     const isProvider = useIsProvider()
     const isBooker = useIsBooker()
     const router = useRouter()
+
+    // Redirect to profile setup if user hasn't completed it
+    useEffect(() => {
+        if (!isLoading && needsProfileSetup) {
+            router.replace('/profile-setup')
+        }
+    }, [isLoading, needsProfileSetup, router])
 
     const handleSignOut = async () => {
         await signOut()
@@ -46,7 +54,7 @@ export default function DashboardPage() {
         return firestoreUser?.email?.[0]?.toUpperCase() || '?'
     }
 
-    if (isLoading) {
+    if (isLoading || needsProfileSetup) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
                 <div className="animate-pulse text-muted-foreground">Loading...</div>
