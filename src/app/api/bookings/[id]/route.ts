@@ -6,6 +6,10 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
+        if (!adminDb) {
+            return NextResponse.json({ error: 'Database not initialized' }, { status: 500 })
+        }
+
         const { id: bookingId } = await params
         const bookingSnap = await adminDb.collection('bookings').doc(bookingId).get()
 
