@@ -90,6 +90,25 @@ export default function ProviderDashboardPage() {
 
     const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {
         try {
+            const booking = pendingBookings.find(b => b.id === bookingId)
+
+            if (action === 'reject') {
+                // Process refund first before updating status
+                const refundRes = await fetch('/api/stripe/refund', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bookingId }),
+                })
+
+                const refundData = await refundRes.json()
+
+                if (!refundRes.ok) {
+                    throw new Error(refundData.error || 'Failed to process refund')
+                }
+
+                console.log('Refund processed:', refundData)
+            }
+
             const newStatus = action === 'confirm' ? 'confirmed' : 'rejected'
             await updateDoc(bookingDoc(bookingId), {
                 status: newStatus,
@@ -100,7 +119,6 @@ export default function ProviderDashboardPage() {
             setPendingBookings(prev => prev.filter(b => b.id !== bookingId))
 
             if (action === 'confirm') {
-                const booking = pendingBookings.find(b => b.id === bookingId)
                 if (booking) {
                     const updated = { ...booking, status: 'confirmed' } as Booking
                     setUpcomingBookings(prev => [...prev, updated].sort((a, b) =>
@@ -115,7 +133,6 @@ export default function ProviderDashboardPage() {
                     }
                 }
             } else {
-                const booking = pendingBookings.find(b => b.id === bookingId)
                 if (booking) {
                     const bookerSnap = await getDoc(userDoc(booking.bookerId))
                     const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
@@ -127,7 +144,7 @@ export default function ProviderDashboardPage() {
             }
         } catch (error) {
             console.error(`Error ${action}ing booking:`, error)
-            alert(`Failed to ${action} booking`)
+            alert(`Failed to ${action} booking: ${error instanceof Error ? error.message : 'Unknown error'}`)
         }
     }
 

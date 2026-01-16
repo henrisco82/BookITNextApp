@@ -51,17 +51,33 @@ export default function BookerDashboardPage() {
         fetchBookings()
     }, [user])
 
-    // Cancel booking
+    // Cancel booking with partial refund
     const handleCancel = async (booking: Booking) => {
         if (!canCancelBooking(booking.startUTC)) {
             alert('Cannot cancel bookings less than 1 hour before start time.')
             return
         }
 
-        if (!confirm('Are you sure you want to cancel this booking?')) return
+        if (!confirm('Are you sure you want to cancel this booking? You will receive a refund minus the platform fee.')) return
 
         setCancellingId(booking.id)
         try {
+            // Process partial refund first (platform keeps 1% fee)
+            const refundRes = await fetch('/api/stripe/refund', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookingId: booking.id, type: 'partial' }),
+            })
+
+            const refundData = await refundRes.json()
+
+            if (!refundRes.ok) {
+                throw new Error(refundData.error || 'Failed to process refund')
+            }
+
+            console.log('Refund processed:', refundData)
+
+            // Update booking status
             await updateDoc(bookingDoc(booking.id), {
                 status: 'cancelled',
                 cancelledAt: Timestamp.now(),
@@ -77,9 +93,11 @@ export default function BookerDashboardPage() {
                         : b
                 )
             )
+
+            alert(`Booking cancelled. Refund of €${refundData.amount.toFixed(2)} is being processed.`)
         } catch (error) {
             console.error('Error cancelling booking:', error)
-            alert('Failed to cancel booking')
+            alert(`Failed to cancel booking: ${error instanceof Error ? error.message : 'Unknown error'}`)
         } finally {
             setCancellingId(null)
         }

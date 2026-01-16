@@ -72,6 +72,12 @@ export interface Booking {
     cancelledAt?: Date
     cancelledBy?: string
     cancellationReason?: string
+    // Refund fields
+    refundId?: string // Stripe refund ID
+    refundAmount?: number // Amount refunded in cents
+    refundStatus?: string // Stripe refund status
+    refundType?: 'full' | 'partial' // full = provider declined, partial = booker cancelled
+    refundedAt?: Date
     createdAt: Date
     updatedAt: Date
 }
