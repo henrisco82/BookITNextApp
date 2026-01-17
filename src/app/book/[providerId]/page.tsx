@@ -9,7 +9,6 @@ import {
     userDoc,
     availabilityCollection,
     bookingsCollection,
-    portfolioCollection,
     query,
     where,
     getDocs,
@@ -28,9 +27,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import type { User, Availability, Booking, PortfolioItem } from '@/types'
+import type { User, Availability, Booking } from '@/types'
 import Image from 'next/image'
-import { ArrowLeft, Calendar, Clock, ChevronLeft, ChevronRight, Globe, Image as ImageIcon, Euro } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, ChevronLeft, ChevronRight, Globe, Euro, User as UserIcon } from 'lucide-react'
 
 export default function BookingPage() {
     const params = useParams()
@@ -42,7 +41,6 @@ export default function BookingPage() {
     const [provider, setProvider] = useState<User | null>(null)
     const [availability, setAvailability] = useState<Availability[]>([])
     const [existingBookings, setExistingBookings] = useState<Booking[]>([])
-    const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
     // Selection state
@@ -91,14 +89,6 @@ export default function BookingPage() {
                     .filter(b => (b.status === 'confirmed' || b.status === 'pending') && b.startUTC >= now)
 
                 setExistingBookings(confirmedUpComing)
-
-                // Fetch portfolio
-                const portfolioQ = query(
-                    portfolioCollection,
-                    where('providerId', '==', providerId)
-                )
-                const portfolioSnap = await getDocs(portfolioQ)
-                setPortfolioItems(portfolioSnap.docs.map(d => d.data() as PortfolioItem))
             } catch (error) {
                 console.error('Error fetching provider data:', error)
             } finally {
@@ -364,53 +354,15 @@ export default function BookingPage() {
                     </Card>
                 </div>
 
-                {/* Portfolio Section */}
-                {portfolioItems.length > 0 && (
-                    <Card className="border-2 mt-6">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <ImageIcon className="h-5 w-5" />
-                                Portfolio
-                            </CardTitle>
-                            <CardDescription>
-                                Recent work by {provider.displayName}
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                                {portfolioItems.map((item) => (
-                                    <div key={item.id} className="group relative aspect-square rounded-lg overflow-hidden bg-muted">
-                                        {item.imageUrl ? (
-                                            <Image
-                                                src={item.imageUrl}
-                                                alt={item.title}
-                                                fill
-                                                className="object-cover transition-transform group-hover:scale-105"
-                                            />
-                                        ) : provider.imageUrl ? (
-                                            <Image
-                                                src={provider.imageUrl}
-                                                alt={provider.displayName}
-                                                fill
-                                                className="object-cover transition-transform group-hover:scale-105"
-                                            />
-                                        ) : (
-                                            <div className="h-full w-full bg-primary/10 flex items-center justify-center text-4xl font-bold text-primary">
-                                                {provider.displayName.charAt(0)}
-                                            </div>
-                                        )}
-                                        <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                                            {item.description && (
-                                                <p className="text-white/80 text-xs truncate">{item.description}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                {/* View Provider Profile Link */}
+                <div className="mt-6">
+                    <Link href={`/view-provider/${providerId}`}>
+                        <Button variant="outline" className="gap-2">
+                            <UserIcon className="h-4 w-4" />
+                            View {provider.displayName}&apos;s Profile & Portfolio
+                        </Button>
+                    </Link>
+                </div>
 
                 {/* Time Slots */}
                 {selectedDate && (

@@ -164,9 +164,9 @@ export default function ProviderDirectoryPage() {
                                             {provider.bio}
                                         </p>
                                     )}
-                                    <Link href={`/book/${provider.id}`}>
+                                    <Link href={`/view-provider/${provider.id}`}>
                                         <Button className="w-full gap-2">
-                                            Book Now
+                                            View Profile
                                             <ArrowRight className="h-4 w-4" />
                                         </Button>
                                     </Link>

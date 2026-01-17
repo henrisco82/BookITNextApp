@@ -159,7 +159,7 @@ const portfolioConverter: FirestoreDataConverter<PortfolioItem> = {
     toFirestore(item: WithFieldValue<PortfolioItem>): DocumentData {
         return {
             providerId: item.providerId,
-            imageUrl: item.imageUrl,
+            imageUrls: item.imageUrls,
             title: item.title,
             description: item.description ?? null,
             createdAt: item.createdAt,
@@ -171,7 +171,7 @@ const portfolioConverter: FirestoreDataConverter<PortfolioItem> = {
         return {
             id: snapshot.id,
             providerId: data.providerId,
-            imageUrl: data.imageUrl,
+            imageUrls: data.imageUrls ?? [],
             title: data.title,
             description: data.description ?? undefined,
             createdAt: timestampToDate(data.createdAt),

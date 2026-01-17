@@ -141,7 +141,7 @@ export interface ProviderCard {
 export interface PortfolioItem {
     id: string
     providerId: string
-    imageUrl: string
+    imageUrls: string[]
     title: string
     description?: string
     createdAt: Date
