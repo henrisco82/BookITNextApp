@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, Home } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { sendBookerNotification } from '@/lib/email'
 
@@ -156,15 +156,10 @@ export default function ProviderDashboardPage() {
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center gap-3">
                             <Link href="/dashboard">
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    <Home className="h-4 w-4" />
-                                    Home
+                                <Button variant="ghost" size="icon">
+                                    <ArrowLeft className="h-5 w-5" />
                                 </Button>
                             </Link>
-                            <div className="h-6 w-px bg-border" />
-                            <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                <Calendar className="h-5 w-5 text-blue-500" />
-                            </div>
                             <h1 className="text-xl font-semibold">Provider Dashboard</h1>
                         </div>
                         <div className="flex items-center gap-3">

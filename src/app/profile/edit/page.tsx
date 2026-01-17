@@ -163,6 +163,8 @@ export default function EditProfilePage() {
     }
 
     return (
+        <>
+        {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
             <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -475,5 +477,6 @@ export default function EditProfilePage() {
                 </form>
             </div>
         </div>
+        </>
     )
 }
