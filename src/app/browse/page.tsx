@@ -158,13 +158,15 @@ export default function ProviderDirectoryPage() {
                                         </div>
                                     </div>
                                 </CardHeader>
-                                <CardContent className="flex-1 flex flex-col justify-between">
-                                    {provider.bio && (
-                                        <p className="text-sm text-muted-foreground mb-4 line-clamp-3">
-                                            {provider.bio}
-                                        </p>
-                                    )}
-                                    <Link href={`/view-provider/${provider.id}`}>
+                                <CardContent className="flex-1 flex flex-col">
+                                    <div className="flex-1">
+                                        {provider.bio && (
+                                            <p className="text-sm text-muted-foreground line-clamp-3">
+                                                {provider.bio}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <Link href={`/view-provider/${provider.id}`} className="mt-4">
                                         <Button className="w-full gap-2">
                                             View Profile
                                             <ArrowRight className="h-4 w-4" />
