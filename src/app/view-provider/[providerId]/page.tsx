@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import {
     userDoc,
     portfolioCollection,
+    reviewsCollection,
     query,
     where,
     getDocs,
@@ -15,7 +16,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import type { User, PortfolioItem } from '@/types'
+import type { User, PortfolioItem, Review } from '@/types'
+import { formatInTimezone } from '@/lib/timezone'
 import { ArrowLeft, Calendar, Euro, Loader2, MapPin, Star } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
@@ -26,6 +28,7 @@ export default function ViewProviderPage() {
 
     const [provider, setProvider] = useState<User | null>(null)
     const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([])
+    const [reviews, setReviews] = useState<Review[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
@@ -63,6 +66,16 @@ export default function ViewProviderPage() {
                 const items = portfolioSnap.docs.map(d => d.data() as PortfolioItem)
                 items.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
                 setPortfolioItems(items)
+
+                // Fetch reviews
+                const reviewsQ = query(
+                    reviewsCollection,
+                    where('providerId', '==', providerId)
+                )
+                const reviewsSnap = await getDocs(reviewsQ)
+                const reviewItems = reviewsSnap.docs.map(d => d.data() as Review)
+                reviewItems.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                setReviews(reviewItems)
             } catch (err) {
                 console.error('Error fetching provider:', err)
                 setError('Failed to load provider')
@@ -84,6 +97,11 @@ export default function ViewProviderPage() {
     const lightboxSlides = currentPortfolioItem?.imageUrls.map(url => ({
         src: url,
     })) || []
+
+    // Calculate average rating
+    const averageRating = reviews.length > 0
+        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+        : 0
 
     if (isLoading) {
         return (
@@ -164,6 +182,26 @@ export default function ViewProviderPage() {
                                     )}
 
                                     <div className="flex flex-wrap gap-4 mb-4">
+                                        {reviews.length > 0 && (
+                                            <div className="flex items-center gap-1">
+                                                <div className="flex items-center">
+                                                    {[1, 2, 3, 4, 5].map((star) => (
+                                                        <Star
+                                                            key={star}
+                                                            className={`h-4 w-4 ${
+                                                                star <= Math.round(averageRating)
+                                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                                    : 'text-muted-foreground'
+                                                            }`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="font-semibold">{averageRating.toFixed(1)}</span>
+                                                <span className="text-muted-foreground text-sm">
+                                                    ({reviews.length} review{reviews.length !== 1 ? 's' : ''})
+                                                </span>
+                                            </div>
+                                        )}
                                         {provider.pricePerSession && (
                                             <div className="flex items-center gap-1 text-primary font-semibold">
                                                 <Euro className="h-4 w-4" />
@@ -272,6 +310,88 @@ export default function ViewProviderPage() {
                                                     {item.description && (
                                                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                                                             {item.description}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Reviews Section */}
+                    <Card className="border-2 mt-8">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Star className="h-5 w-5" />
+                                Reviews
+                            </CardTitle>
+                            <CardDescription>
+                                {reviews.length > 0
+                                    ? `${reviews.length} review${reviews.length !== 1 ? 's' : ''} from clients`
+                                    : 'No reviews yet'
+                                }
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {reviews.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <Star className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                                    <p>This provider hasn&apos;t received any reviews yet.</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-6">
+                                    {reviews.map((review) => (
+                                        <div key={review.id} className="border-b last:border-0 pb-6 last:pb-0">
+                                            <div className="flex items-start gap-4">
+                                                {/* Reviewer Avatar */}
+                                                <div className="flex-shrink-0">
+                                                    <div className="h-10 w-10 rounded-full overflow-hidden bg-muted">
+                                                        {review.bookerImageUrl ? (
+                                                            <Image
+                                                                src={review.bookerImageUrl}
+                                                                alt={review.bookerName}
+                                                                width={40}
+                                                                height={40}
+                                                                className="object-cover w-full h-full"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-full w-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+                                                                {review.bookerName.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* Review Content */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center justify-between gap-2 mb-1">
+                                                        <h4 className="font-semibold truncate">{review.bookerName}</h4>
+                                                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                                            {formatInTimezone(review.createdAt, 'UTC', 'MMM d, yyyy')}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Star Rating */}
+                                                    <div className="flex items-center gap-1 mb-2">
+                                                        {[1, 2, 3, 4, 5].map((star) => (
+                                                            <Star
+                                                                key={star}
+                                                                className={`h-4 w-4 ${
+                                                                    star <= review.rating
+                                                                        ? 'fill-yellow-400 text-yellow-400'
+                                                                        : 'text-muted-foreground'
+                                                                }`}
+                                                            />
+                                                        ))}
+                                                    </div>
+
+                                                    {/* Comment */}
+                                                    {review.comment && (
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {review.comment}
                                                         </p>
                                                     )}
                                                 </div>

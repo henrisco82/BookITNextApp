@@ -147,3 +147,16 @@ export interface PortfolioItem {
     createdAt: Date
     updatedAt: Date
 }
+
+// Review from booker to provider
+export interface Review {
+    id: string
+    bookingId: string
+    providerId: string
+    bookerId: string
+    bookerName: string
+    bookerImageUrl?: string
+    rating: number // 1-5 stars
+    comment: string
+    createdAt: Date
+}

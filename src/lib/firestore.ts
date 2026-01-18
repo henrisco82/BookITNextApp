@@ -22,7 +22,7 @@ import type {
     CollectionReference,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, Availability, Booking, PortfolioItem } from '@/types'
+import type { User, Availability, Booking, PortfolioItem, Review } from '@/types'
 
 // Helper to convert Firestore Timestamp to Date
 const timestampToDate = (timestamp: Timestamp | Date | undefined): Date => {
@@ -180,17 +180,49 @@ const portfolioConverter: FirestoreDataConverter<PortfolioItem> = {
     },
 }
 
+// Review converter
+const reviewConverter: FirestoreDataConverter<Review> = {
+    toFirestore(review: WithFieldValue<Review>): DocumentData {
+        return {
+            bookingId: review.bookingId,
+            providerId: review.providerId,
+            bookerId: review.bookerId,
+            bookerName: review.bookerName,
+            bookerImageUrl: review.bookerImageUrl ?? null,
+            rating: review.rating,
+            comment: review.comment,
+            createdAt: review.createdAt,
+        }
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot): Review {
+        const data = snapshot.data()
+        return {
+            id: snapshot.id,
+            bookingId: data.bookingId,
+            providerId: data.providerId,
+            bookerId: data.bookerId,
+            bookerName: data.bookerName,
+            bookerImageUrl: data.bookerImageUrl ?? undefined,
+            rating: data.rating,
+            comment: data.comment,
+            createdAt: timestampToDate(data.createdAt),
+        }
+    },
+}
+
 // Collection references with converters
 export const usersCollection = collection(db, 'users').withConverter(userConverter)
 export const availabilityCollection = collection(db, 'availability').withConverter(availabilityConverter)
 export const bookingsCollection = collection(db, 'bookings').withConverter(bookingConverter)
 export const portfolioCollection = collection(db, 'portfolio').withConverter(portfolioConverter)
+export const reviewsCollection = collection(db, 'reviews').withConverter(reviewConverter)
 
 // Document references
 export const userDoc = (userId: string) => doc(db, 'users', userId).withConverter(userConverter)
 export const availabilityDoc = (availabilityId: string) => doc(db, 'availability', availabilityId).withConverter(availabilityConverter)
 export const bookingDoc = (bookingId: string) => doc(db, 'bookings', bookingId).withConverter(bookingConverter)
 export const portfolioDoc = (itemId: string) => doc(db, 'portfolio', itemId).withConverter(portfolioConverter)
+export const reviewDoc = (reviewId: string) => doc(db, 'reviews', reviewId).withConverter(reviewConverter)
 
 // Export Firestore utilities for use in hooks
 export {

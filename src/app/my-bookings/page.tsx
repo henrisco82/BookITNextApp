@@ -4,53 +4,69 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { bookingDoc, query, where, getDocs, updateDoc, Timestamp, bookingsCollection } from '@/lib/firestore'
+import { bookingDoc, query, where, getDocs, updateDoc, Timestamp, bookingsCollection, reviewsCollection } from '@/lib/firestore'
 import { formatInTimezone, formatTimeInTimezone, canCancelBooking, getMinutesUntilBooking } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X } from 'lucide-react'
+import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star } from 'lucide-react'
+
+// Helper to get timestamp in milliseconds from Date or Firestore Timestamp
+const getTimeMs = (date: Date | { seconds: number }): number => {
+    if (date instanceof Date) return date.getTime()
+    if ('seconds' in date) return date.seconds * 1000
+    return 0
+}
 
 export default function BookerDashboardPage() {
     const { user } = useCurrentUser()
     const [bookings, setBookings] = useState<Booking[]>([])
+    const [reviewedBookings, setReviewedBookings] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(true)
     const [cancellingId, setCancellingId] = useState<string | null>(null)
     const { confirm, ConfirmDialog } = useConfirmDialog()
 
-    // Fetch bookings
+    // Fetch bookings and reviews
     useEffect(() => {
         if (!user) return
 
-        const fetchBookings = async () => {
+        const fetchData = async () => {
             try {
-                const q = query(
+                // Fetch bookings
+                const bookingsQ = query(
                     bookingsCollection,
                     where('bookerId', '==', user.id)
                 )
-                const snapshot = await getDocs(q)
+                const bookingsSnap = await getDocs(bookingsQ)
 
-                const bookingList = snapshot.docs.map((doc) => doc.data() as Booking)
+                const bookingList = bookingsSnap.docs.map((doc) => doc.data() as Booking)
 
                 bookingList.sort((a, b) => {
-                    const aTime = a.startUTC instanceof Date ? a.startUTC.getTime() :
-                        (a.startUTC as unknown as { seconds: number }).seconds ? (a.startUTC as unknown as { seconds: number }).seconds * 1000 : 0
-                    const bTime = b.startUTC instanceof Date ? b.startUTC.getTime() :
-                        (b.startUTC as unknown as { seconds: number }).seconds ? (b.startUTC as unknown as { seconds: number }).seconds * 1000 : 0
+                    const aTime = getTimeMs(a.startUTC as Date | { seconds: number })
+                    const bTime = getTimeMs(b.startUTC as Date | { seconds: number })
                     return bTime - aTime
                 })
 
                 setBookings(bookingList)
+
+                // Fetch reviews by this user
+                const reviewsQ = query(
+                    reviewsCollection,
+                    where('bookerId', '==', user.id)
+                )
+                const reviewsSnap = await getDocs(reviewsQ)
+                const reviewedIds = new Set(reviewsSnap.docs.map(doc => doc.data().bookingId))
+                setReviewedBookings(reviewedIds)
             } catch (error) {
-                console.error('Error fetching bookings:', error)
+                console.error('Error fetching data:', error)
             } finally {
                 setIsLoading(false)
             }
         }
 
-        fetchBookings()
+        fetchData()
     }, [user])
 
     // Cancel booking with partial refund
@@ -114,12 +130,12 @@ export default function BookerDashboardPage() {
     }
 
     // Separate upcoming and past/cancelled/rejected bookings
-    const now = new Date()
+    const nowMs = Date.now()
     const upcomingBookings = bookings.filter(
-        (b) => b.startUTC > now && (b.status === 'confirmed' || b.status === 'pending')
+        (b) => getTimeMs(b.startUTC as Date | { seconds: number }) > nowMs && (b.status === 'confirmed' || b.status === 'pending')
     )
     const pastBookings = bookings.filter(
-        (b) => b.startUTC <= now || b.status === 'cancelled' || b.status === 'rejected'
+        (b) => getTimeMs(b.startUTC as Date | { seconds: number }) <= nowMs || b.status === 'cancelled' || b.status === 'rejected'
     )
 
     return (
@@ -283,33 +299,61 @@ export default function BookerDashboardPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <div className="space-y-3">
-                                        {pastBookings.slice(0, 10).map((booking) => (
-                                            <div
-                                                key={booking.id}
-                                                className="flex items-center justify-between p-4 rounded-lg border bg-muted/30"
-                                            >
-                                                <div>
-                                                    <p className="font-medium text-muted-foreground">
-                                                        {booking.providerName}
-                                                    </p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {formatInTimezone(
-                                                            booking.startUTC,
-                                                            user?.timezone || 'UTC',
-                                                            'MMM d, yyyy'
-                                                        )}
-                                                    </p>
-                                                </div>
+                                        {pastBookings.slice(0, 10).map((booking) => {
+                                            const endTimeMs = getTimeMs(booking.endUTC as Date | { seconds: number })
+                                            const isCompleted = booking.status === 'confirmed' && endTimeMs <= nowMs
+                                            const hasReviewed = reviewedBookings.has(booking.id)
+                                            const canReview = isCompleted && !hasReviewed
+
+                                            // Determine display status
+                                            const getStatusDisplay = () => {
+                                                if (booking.status === 'cancelled') return { text: 'Cancelled', className: 'bg-destructive/10 text-destructive' }
+                                                if (booking.status === 'rejected') return { text: 'Declined', className: 'bg-destructive/10 text-destructive' }
+                                                if (booking.status === 'pending') return { text: 'Expired (Not Confirmed)', className: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' }
+                                                if (isCompleted) return { text: 'Completed', className: 'bg-muted text-muted-foreground' }
+                                                return { text: booking.status, className: 'bg-muted text-muted-foreground' }
+                                            }
+                                            const statusDisplay = getStatusDisplay()
+
+                                            return (
                                                 <div
-                                                    className={`text-sm px-2 py-1 rounded ${booking.status === 'cancelled' || booking.status === 'rejected'
-                                                        ? 'bg-destructive/10 text-destructive'
-                                                        : 'bg-muted text-muted-foreground'
-                                                        }`}
+                                                    key={booking.id}
+                                                    className="flex items-center justify-between p-4 rounded-lg border bg-muted/30"
                                                 >
-                                                    {booking.status === 'cancelled' ? 'Cancelled' : booking.status === 'rejected' ? 'Declined' : 'Completed'}
+                                                    <div>
+                                                        <p className="font-medium text-muted-foreground">
+                                                            {booking.providerName}
+                                                        </p>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {formatInTimezone(
+                                                                booking.startUTC,
+                                                                user?.timezone || 'UTC',
+                                                                'MMM d, yyyy'
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {canReview ? (
+                                                            <Link href={`/review/${booking.id}`}>
+                                                                <Button size="sm" variant="outline" className="gap-1">
+                                                                    <Star className="h-4 w-4" />
+                                                                    Leave Review
+                                                                </Button>
+                                                            </Link>
+                                                        ) : hasReviewed ? (
+                                                            <div className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
+                                                                <CheckCircle className="h-4 w-4" />
+                                                                Reviewed
+                                                            </div>
+                                                        ) : (
+                                                            <div className={`text-sm px-2 py-1 rounded ${statusDisplay.className}`}>
+                                                                {statusDisplay.text}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 </CardContent>
                             </Card>
