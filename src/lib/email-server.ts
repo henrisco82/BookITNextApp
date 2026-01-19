@@ -16,26 +16,39 @@ interface EmailJSResponse {
 }
 
 async function sendEmailJS(templateId: string, templateParams: Record<string, string>): Promise<EmailJSResponse> {
+    console.log('📧 [SERVER] sendEmailJS called')
+    console.log('  - PRIVATE_KEY loaded:', !!PRIVATE_KEY)
+    console.log('  - PRIVATE_KEY length:', PRIVATE_KEY?.length || 0)
+    console.log('  - PRIVATE_KEY first 4 chars:', PRIVATE_KEY?.substring(0, 4) || 'N/A')
+
     if (!PRIVATE_KEY) {
         console.error('❌ [SERVER] EMAILJS_PRIVATE_KEY is not set - required for server-side email')
         return { status: 403, text: 'Private key not configured' }
     }
+
+    const requestBody = {
+        service_id: SERVICE_ID,
+        template_id: templateId,
+        user_id: PUBLIC_KEY,
+        accessToken: PRIVATE_KEY,
+        template_params: templateParams,
+    }
+
+    console.log('📧 [SERVER] Request body (without accessToken):', JSON.stringify({
+        ...requestBody,
+        accessToken: '[REDACTED]'
+    }, null, 2))
 
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            service_id: SERVICE_ID,
-            template_id: templateId,
-            user_id: PUBLIC_KEY,
-            accessToken: PRIVATE_KEY, // Required for server-side requests
-            template_params: templateParams,
-        }),
+        body: JSON.stringify(requestBody),
     })
 
     const text = await response.text()
+    console.log('📧 [SERVER] EmailJS response:', response.status, text)
     return { status: response.status, text }
 }
 
