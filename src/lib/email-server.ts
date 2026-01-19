@@ -8,6 +8,7 @@ const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID
 const PROVIDER_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID
 const BOOKER_TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_BOOKER_TEMPLATE_ID
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+const PRIVATE_KEY = process.env.EMAILJS_PRIVATE_KEY // Required for server-side calls
 
 interface EmailJSResponse {
     status: number
@@ -15,6 +16,11 @@ interface EmailJSResponse {
 }
 
 async function sendEmailJS(templateId: string, templateParams: Record<string, string>): Promise<EmailJSResponse> {
+    if (!PRIVATE_KEY) {
+        console.error('❌ [SERVER] EMAILJS_PRIVATE_KEY is not set - required for server-side email')
+        return { status: 403, text: 'Private key not configured' }
+    }
+
     const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
         method: 'POST',
         headers: {
@@ -24,6 +30,7 @@ async function sendEmailJS(templateId: string, templateParams: Record<string, st
             service_id: SERVICE_ID,
             template_id: templateId,
             user_id: PUBLIC_KEY,
+            accessToken: PRIVATE_KEY, // Required for server-side requests
             template_params: templateParams,
         }),
     })
@@ -41,9 +48,16 @@ export const sendProviderNotificationServer = async (
     console.log('  - SERVICE_ID exists:', !!SERVICE_ID)
     console.log('  - PROVIDER_TEMPLATE_ID exists:', !!PROVIDER_TEMPLATE_ID)
     console.log('  - PUBLIC_KEY exists:', !!PUBLIC_KEY)
+    console.log('  - PRIVATE_KEY exists:', !!PRIVATE_KEY)
 
-    if (!SERVICE_ID || !PROVIDER_TEMPLATE_ID || !PUBLIC_KEY) {
+    if (!SERVICE_ID || !PROVIDER_TEMPLATE_ID || !PUBLIC_KEY || !PRIVATE_KEY) {
         console.warn('❌ [SERVER] EmailJS credentials missing, skipping provider email.')
+        console.warn('  Missing:',
+            !SERVICE_ID ? 'SERVICE_ID' : '',
+            !PROVIDER_TEMPLATE_ID ? 'PROVIDER_TEMPLATE_ID' : '',
+            !PUBLIC_KEY ? 'PUBLIC_KEY' : '',
+            !PRIVATE_KEY ? 'PRIVATE_KEY' : ''
+        )
         return
     }
 
@@ -97,9 +111,16 @@ export const sendBookerNotificationServer = async (
     console.log('  - SERVICE_ID exists:', !!SERVICE_ID)
     console.log('  - BOOKER_TEMPLATE_ID exists:', !!BOOKER_TEMPLATE_ID)
     console.log('  - PUBLIC_KEY exists:', !!PUBLIC_KEY)
+    console.log('  - PRIVATE_KEY exists:', !!PRIVATE_KEY)
 
-    if (!SERVICE_ID || !BOOKER_TEMPLATE_ID || !PUBLIC_KEY) {
-        console.warn('❌ [SERVER] EmailJS booker template credentials missing, skipping booker email.')
+    if (!SERVICE_ID || !BOOKER_TEMPLATE_ID || !PUBLIC_KEY || !PRIVATE_KEY) {
+        console.warn('❌ [SERVER] EmailJS credentials missing, skipping booker email.')
+        console.warn('  Missing:',
+            !SERVICE_ID ? 'SERVICE_ID' : '',
+            !BOOKER_TEMPLATE_ID ? 'BOOKER_TEMPLATE_ID' : '',
+            !PUBLIC_KEY ? 'PUBLIC_KEY' : '',
+            !PRIVATE_KEY ? 'PRIVATE_KEY' : ''
+        )
         return
     }
 
