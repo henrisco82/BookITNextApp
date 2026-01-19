@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { bookingDoc, query, where, getDocs, updateDoc, Timestamp, bookingsCollection, reviewsCollection } from '@/lib/firestore'
+import { bookingDoc, userDoc, query, where, getDocs, getDoc, updateDoc, Timestamp, bookingsCollection, reviewsCollection } from '@/lib/firestore'
+import { sendCancellationNotification } from '@/lib/email'
 import { formatInTimezone, formatTimeInTimezone, canCancelBooking, getMinutesUntilBooking } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -110,6 +111,24 @@ export default function BookerDashboardPage() {
                 cancelledBy: 'booker',
                 updatedAt: Timestamp.now(),
             })
+
+            // Send cancellation notification to provider
+            try {
+                const providerSnap = await getDoc(userDoc(booking.providerId))
+                const providerData = providerSnap.exists() ? providerSnap.data() : null
+
+                if (providerData?.notificationSettings?.email?.bookingCancelled && providerData.email) {
+                    await sendCancellationNotification(
+                        booking,
+                        'booker',
+                        providerData.email,
+                        booking.providerName
+                    )
+                }
+            } catch (emailError) {
+                console.error('Error sending cancellation email:', emailError)
+                // Don't fail the cancellation if email fails
+            }
 
             // Update local state
             setBookings(

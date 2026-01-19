@@ -11,13 +11,20 @@ export const sendProviderNotification = async (
     booking: Booking,
     providerEmail: string
 ): Promise<void> => {
+    console.log('📧 sendProviderNotification called')
+    console.log('  - Provider email:', providerEmail)
+    console.log('  - SERVICE_ID exists:', !!SERVICE_ID)
+    console.log('  - PROVIDER_TEMPLATE_ID exists:', !!PROVIDER_TEMPLATE_ID)
+    console.log('  - PUBLIC_KEY exists:', !!PUBLIC_KEY)
+
     if (!SERVICE_ID || !PROVIDER_TEMPLATE_ID || !PUBLIC_KEY) {
-        console.warn('EmailJS credentials missing, skipping provider email.')
+        console.warn('❌ EmailJS credentials missing, skipping provider email.')
+        console.warn('  Missing:', !SERVICE_ID ? 'SERVICE_ID' : '', !PROVIDER_TEMPLATE_ID ? 'PROVIDER_TEMPLATE_ID' : '', !PUBLIC_KEY ? 'PUBLIC_KEY' : '')
         return
     }
 
     if (!providerEmail || !providerEmail.includes('@')) {
-        console.warn('Invalid provider email address, skipping email:', providerEmail)
+        console.warn('❌ Invalid provider email address, skipping email:', providerEmail)
         return
     }
 
@@ -40,11 +47,13 @@ export const sendProviderNotification = async (
         app_name: 'BookIt'
     }
 
+    console.log('📧 Sending provider email with params:', JSON.stringify(templateParams, null, 2))
+
     try {
-        await emailjs.send(SERVICE_ID, PROVIDER_TEMPLATE_ID, templateParams, PUBLIC_KEY)
-        console.log('Provider notification sent successfully')
+        const response = await emailjs.send(SERVICE_ID, PROVIDER_TEMPLATE_ID, templateParams, PUBLIC_KEY)
+        console.log('✅ Provider notification sent successfully:', response)
     } catch (error) {
-        console.error('Failed to send provider notification:', error)
+        console.error('❌ Failed to send provider notification:', error)
     }
 }
 
@@ -53,13 +62,21 @@ export const sendBookerNotification = async (
     status: 'confirmed' | 'rejected',
     bookerEmail: string
 ): Promise<void> => {
+    console.log('📧 sendBookerNotification called')
+    console.log('  - Status:', status)
+    console.log('  - Booker email:', bookerEmail)
+    console.log('  - SERVICE_ID exists:', !!SERVICE_ID)
+    console.log('  - BOOKER_TEMPLATE_ID exists:', !!BOOKER_TEMPLATE_ID)
+    console.log('  - PUBLIC_KEY exists:', !!PUBLIC_KEY)
+
     if (!SERVICE_ID || !BOOKER_TEMPLATE_ID || !PUBLIC_KEY) {
-        console.warn('EmailJS booker template credentials missing, skipping booker email.')
+        console.warn('❌ EmailJS booker template credentials missing, skipping booker email.')
+        console.warn('  Missing:', !SERVICE_ID ? 'SERVICE_ID' : '', !BOOKER_TEMPLATE_ID ? 'BOOKER_TEMPLATE_ID' : '', !PUBLIC_KEY ? 'PUBLIC_KEY' : '')
         return
     }
 
     if (!bookerEmail || !bookerEmail.includes('@')) {
-        console.warn('Invalid booker email address, skipping email:', bookerEmail)
+        console.warn('❌ Invalid booker email address, skipping email:', bookerEmail)
         return
     }
 
@@ -89,10 +106,68 @@ export const sendBookerNotification = async (
         app_name: 'BookIt'
     }
 
+    console.log('📧 Sending booker email with params:', JSON.stringify(templateParams, null, 2))
+
     try {
-        await emailjs.send(SERVICE_ID, BOOKER_TEMPLATE_ID, templateParams, PUBLIC_KEY)
-        console.log('Booker notification sent successfully')
+        const response = await emailjs.send(SERVICE_ID, BOOKER_TEMPLATE_ID, templateParams, PUBLIC_KEY)
+        console.log('✅ Booker notification sent successfully:', response)
     } catch (error) {
-        console.error('Failed to send booker notification:', error)
+        console.error('❌ Failed to send booker notification:', error)
+    }
+}
+
+export const sendCancellationNotification = async (
+    booking: Booking,
+    cancelledBy: 'booker' | 'provider',
+    recipientEmail: string,
+    recipientName: string
+): Promise<void> => {
+    // Use booker template for cancellation notifications
+    const templateId = BOOKER_TEMPLATE_ID
+
+    console.log('📧 sendCancellationNotification called')
+    console.log('  - Cancelled by:', cancelledBy)
+    console.log('  - Recipient email:', recipientEmail)
+    console.log('  - SERVICE_ID exists:', !!SERVICE_ID)
+    console.log('  - TEMPLATE_ID exists:', !!templateId)
+    console.log('  - PUBLIC_KEY exists:', !!PUBLIC_KEY)
+
+    if (!SERVICE_ID || !templateId || !PUBLIC_KEY) {
+        console.warn('❌ EmailJS credentials missing, skipping cancellation email.')
+        return
+    }
+
+    if (!recipientEmail || !recipientEmail.includes('@')) {
+        console.warn('❌ Invalid recipient email address, skipping email:', recipientEmail)
+        return
+    }
+
+    const date = format(booking.startUTC, 'MMMM do, yyyy')
+    const time = format(booking.startUTC, 'h:mm a')
+
+    const cancellerName = cancelledBy === 'booker' ? booking.bookerName : booking.providerName
+    const message = `The booking scheduled for ${date} at ${time} has been cancelled by ${cancellerName}.`
+
+    const templateParams = {
+        provider_name: booking.providerName,
+        customer_name: recipientName,
+        customer_email: recipientEmail,
+        to_email: recipientEmail,
+        to_name: recipientName,
+        service_name: 'Booking Cancelled',
+        booking_date: date,
+        booking_time: time,
+        customer_message: message,
+        meeting_link: '',
+        app_name: 'BookIt'
+    }
+
+    console.log('📧 Sending cancellation email with params:', JSON.stringify(templateParams, null, 2))
+
+    try {
+        const response = await emailjs.send(SERVICE_ID, templateId, templateParams, PUBLIC_KEY)
+        console.log('✅ Cancellation notification sent successfully:', response)
+    } catch (error) {
+        console.error('❌ Failed to send cancellation notification:', error)
     }
 }

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { adminDb } from '@/lib/firebase-admin'
-import { sendProviderNotification } from '@/lib/email'
+import { sendProviderNotificationServer } from '@/lib/email-server'
 import { Timestamp } from 'firebase-admin/firestore'
 import type { Booking } from '@/types'
 
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
                                     createdAt: new Date(),
                                     updatedAt: new Date(),
                                 }
-                                await sendProviderNotification(bookingForEmail, providerData.email)
+                                await sendProviderNotificationServer(bookingForEmail, providerData.email)
                                 console.log('✅ Email notification sent to provider')
                             }
                         }
