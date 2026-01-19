@@ -156,10 +156,20 @@ export async function POST(req: Request) {
 
                     // Send email notification to provider
                     try {
+                        console.log('📧 Attempting to send provider notification...')
+                        console.log('  - Provider ID:', metadata.providerId)
+
                         const providerSnap = await adminDb.collection('users').doc(metadata.providerId).get()
+                        console.log('  - Provider exists in DB:', providerSnap.exists)
+
                         if (providerSnap.exists) {
                             const providerData = providerSnap.data() as StripeUser
+                            console.log('  - Provider email:', providerData.email)
+                            console.log('  - Notification settings:', JSON.stringify(providerData.notificationSettings))
+                            console.log('  - newBookingRequest enabled:', providerData.notificationSettings?.email?.newBookingRequest)
+
                             if (providerData.email && providerData.notificationSettings?.email?.newBookingRequest) {
+                                console.log('✅ Conditions met, sending email...')
                                 // Convert to Booking type with Date objects for email function
                                 const bookingForEmail: Booking = {
                                     id: bookingId,
@@ -181,7 +191,13 @@ export async function POST(req: Request) {
                                 }
                                 await sendProviderNotificationServer(bookingForEmail, providerData.email)
                                 console.log('✅ Email notification sent to provider')
+                            } else {
+                                console.log('⚠️ Skipping email - conditions not met:')
+                                console.log('  - Has email:', !!providerData.email)
+                                console.log('  - newBookingRequest:', providerData.notificationSettings?.email?.newBookingRequest)
                             }
+                        } else {
+                            console.log('⚠️ Provider not found in database')
                         }
                     } catch (emailError) {
                         console.error('⚠️ Error sending email (non-critical):', emailError)

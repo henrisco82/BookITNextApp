@@ -42,7 +42,9 @@ export const sendProviderNotification = async (
         customer_email: booking.bookerEmail,
         booking_date: date,
         booking_time: time,
+        // Support both variable names for template compatibility
         customer_message: booking.notes || 'No message provided',
+        status_message: `You have a new booking request from ${booking.bookerName} for ${date} at ${time}.`,
         meeting_link: booking.meetingLink || '',
         app_name: 'BookIt'
     }
@@ -101,7 +103,9 @@ export const sendBookerNotification = async (
         service_name: `Booking ${status === 'confirmed' ? 'Accepted' : 'Declined'}`,
         booking_date: date,
         booking_time: time,
+        // Support both variable names for template compatibility
         customer_message: message,
+        status_message: message,
         meeting_link: status === 'confirmed' ? (booking.meetingLink || '') : '',
         app_name: 'BookIt'
     }
@@ -157,7 +161,9 @@ export const sendCancellationNotification = async (
         service_name: 'Booking Cancelled',
         booking_date: date,
         booking_time: time,
+        // Support both variable names for template compatibility
         customer_message: message,
+        status_message: message,
         meeting_link: '',
         app_name: 'BookIt'
     }
