@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star } from 'lucide-react'
+import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video } from 'lucide-react'
 
 // Helper to get timestamp in milliseconds from Date or Firestore Timestamp
 const getTimeMs = (date: Date | { seconds: number }): number => {
@@ -263,22 +263,40 @@ export default function BookerDashboardPage() {
                                                                 Confirmed
                                                             </div>
                                                         )}
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                            onClick={() => handleCancel(booking)}
-                                                            disabled={!canCancel || cancellingId === booking.id}
-                                                            className="text-destructive hover:text-destructive"
-                                                        >
-                                                            {cancellingId === booking.id ? (
-                                                                'Cancelling...'
-                                                            ) : (
-                                                                <>
-                                                                    <X className="h-4 w-4 mr-1" />
-                                                                    Cancel
-                                                                </>
+                                                        <div className="flex items-center gap-2">
+                                                            {booking.status === 'confirmed' && booking.meetingLink && (
+                                                                <a
+                                                                    href={booking.meetingLink}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                >
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-primary border-primary/20 hover:bg-primary/10"
+                                                                    >
+                                                                        <Video className="h-4 w-4 mr-1" />
+                                                                        Join Call
+                                                                    </Button>
+                                                                </a>
                                                             )}
-                                                        </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                onClick={() => handleCancel(booking)}
+                                                                disabled={!canCancel || cancellingId === booking.id}
+                                                                className="text-destructive hover:text-destructive"
+                                                            >
+                                                                {cancellingId === booking.id ? (
+                                                                    'Cancelling...'
+                                                                ) : (
+                                                                    <>
+                                                                        <X className="h-4 w-4 mr-1" />
+                                                                        Cancel
+                                                                    </>
+                                                                )}
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )

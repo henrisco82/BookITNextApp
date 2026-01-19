@@ -124,6 +124,10 @@ export async function POST(req: Request) {
                     const bookingId = `${metadata.providerId}_${metadata.bookerId}_${Date.now()}`
                     console.log('Creating booking document:', bookingId)
 
+                    // Generate Jitsi Meet link for the booking
+                    const meetingLink = `https://meet.jit.si/bookit-${bookingId}`
+                    console.log('Generated meeting link:', meetingLink)
+
                     // Use Firestore Timestamps for reliable date serialization
                     const bookingDataForFirestore = {
                         id: bookingId,
@@ -139,6 +143,7 @@ export async function POST(req: Request) {
                         ...(metadata.notes ? { notes: metadata.notes } : {}),
                         paymentIntentId: session.payment_intent as string,
                         priceAtBooking: parseFloat(metadata.price || '0'),
+                        meetingLink: meetingLink,
                         createdAt: Timestamp.now(),
                         updatedAt: Timestamp.now(),
                     }
@@ -170,6 +175,7 @@ export async function POST(req: Request) {
                                     ...(metadata.notes ? { notes: metadata.notes } : {}),
                                     paymentIntentId: session.payment_intent as string,
                                     priceAtBooking: parseFloat(metadata.price || '0'),
+                                    meetingLink: meetingLink,
                                     createdAt: new Date(),
                                     updatedAt: new Date(),
                                 }

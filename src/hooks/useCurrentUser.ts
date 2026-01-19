@@ -122,9 +122,17 @@ export function useCurrentUser(): UseCurrentUserReturn {
 
             const userId = clerkUser.id
 
+            // Filter out undefined values as Firestore doesn't accept them
+            const cleanedData: Record<string, unknown> = {}
+            for (const [key, value] of Object.entries(data)) {
+                if (value !== undefined) {
+                    cleanedData[key] = value
+                }
+            }
+
             try {
                 await updateDoc(userDoc(userId), {
-                    ...data,
+                    ...cleanedData,
                     updatedAt: Timestamp.now(),
                 })
             } catch (err) {

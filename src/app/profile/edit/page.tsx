@@ -398,33 +398,62 @@ export default function EditProfilePage() {
                             </div>
 
                             {(user?.role === 'booker' || user?.role === 'both') && (
-                                <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
-                                    <div className="space-y-0.5">
-                                        <Label className="text-base">Booking Declined</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                            Receive an email if a provider declines your request
-                                        </p>
-                                    </div>
-                                    <input
-                                        type="checkbox"
-                                        className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
-                                        checked={user?.notificationSettings?.email?.bookingDeclined || false}
-                                        onChange={(e) => updateProfile({
-                                            notificationSettings: {
-                                                ...user?.notificationSettings,
-                                                email: {
-                                                    ...(user?.notificationSettings?.email || {
-                                                        newBookingRequest: false,
-                                                        bookingConfirmed: false,
-                                                        bookingDeclined: false,
-                                                        bookingCancelled: false,
-                                                    }),
-                                                    bookingDeclined: e.target.checked
+                                <>
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-base">Booking Confirmed</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Receive an email when a provider accepts your booking (includes video call link)
+                                            </p>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked={user?.notificationSettings?.email?.bookingConfirmed || false}
+                                            onChange={(e) => updateProfile({
+                                                notificationSettings: {
+                                                    ...user?.notificationSettings,
+                                                    email: {
+                                                        ...(user?.notificationSettings?.email || {
+                                                            newBookingRequest: false,
+                                                            bookingConfirmed: false,
+                                                            bookingDeclined: false,
+                                                            bookingCancelled: false,
+                                                        }),
+                                                        bookingConfirmed: e.target.checked
+                                                    }
                                                 }
-                                            }
-                                        })}
-                                    />
-                                </div>
+                                            })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border">
+                                        <div className="space-y-0.5">
+                                            <Label className="text-base">Booking Declined</Label>
+                                            <p className="text-sm text-muted-foreground">
+                                                Receive an email if a provider declines your request
+                                            </p>
+                                        </div>
+                                        <input
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked={user?.notificationSettings?.email?.bookingDeclined || false}
+                                            onChange={(e) => updateProfile({
+                                                notificationSettings: {
+                                                    ...user?.notificationSettings,
+                                                    email: {
+                                                        ...(user?.notificationSettings?.email || {
+                                                            newBookingRequest: false,
+                                                            bookingConfirmed: false,
+                                                            bookingDeclined: false,
+                                                            bookingCancelled: false,
+                                                        }),
+                                                        bookingDeclined: e.target.checked
+                                                    }
+                                                }
+                                            })}
+                                        />
+                                    </div>
+                                </>
                             )}
                         </CardContent>
                     </Card>

@@ -69,6 +69,7 @@ export interface Booking {
     notes?: string // Optional booking notes
     priceAtBooking?: number // Price agreed at time of booking
     paymentIntentId?: string // Stripe link
+    meetingLink?: string // Video call link (Jitsi Meet)
     cancelledAt?: Date
     cancelledBy?: string
     cancellationReason?: string

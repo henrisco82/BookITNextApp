@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { sendBookerNotification } from '@/lib/email'
 
@@ -110,8 +110,16 @@ export default function ProviderDashboardPage() {
             }
 
             const newStatus = action === 'confirm' ? 'confirmed' : 'rejected'
+
+            // Generate meeting link if confirming and booking doesn't have one
+            let meetingLink = booking?.meetingLink
+            if (action === 'confirm' && !meetingLink) {
+                meetingLink = `https://meet.jit.si/bookit-${bookingId}`
+            }
+
             await updateDoc(bookingDoc(bookingId), {
                 status: newStatus,
+                ...(action === 'confirm' && meetingLink ? { meetingLink } : {}),
                 updatedAt: new Date()
             })
 
@@ -120,7 +128,7 @@ export default function ProviderDashboardPage() {
 
             if (action === 'confirm') {
                 if (booking) {
-                    const updated = { ...booking, status: 'confirmed' } as Booking
+                    const updated = { ...booking, status: 'confirmed', meetingLink } as Booking
                     setUpcomingBookings(prev => [...prev, updated].sort((a, b) =>
                         (a.startUTC.getTime() - b.startUTC.getTime())
                     ).slice(0, 5))
@@ -129,7 +137,14 @@ export default function ProviderDashboardPage() {
                     const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
 
                     if (bookerData?.notificationSettings?.email?.bookingConfirmed) {
-                        await sendBookerNotification(booking, 'confirmed', booking.bookerEmail)
+                        // Use booker email from booking, or fall back to user profile email
+                        const bookerEmail = booking.bookerEmail || bookerData.email
+                        if (bookerEmail) {
+                            const bookingWithLink = { ...booking, meetingLink }
+                            await sendBookerNotification(bookingWithLink, 'confirmed', bookerEmail)
+                        } else {
+                            console.warn('No email found for booker:', booking.bookerId)
+                        }
                     }
                 }
             } else {
@@ -138,7 +153,13 @@ export default function ProviderDashboardPage() {
                     const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
 
                     if (bookerData?.notificationSettings?.email?.bookingDeclined) {
-                        await sendBookerNotification(booking, 'rejected', booking.bookerEmail)
+                        // Use booker email from booking, or fall back to user profile email
+                        const bookerEmail = booking.bookerEmail || bookerData.email
+                        if (bookerEmail) {
+                            await sendBookerNotification(booking, 'rejected', bookerEmail)
+                        } else {
+                            console.warn('No email found for booker:', booking.bookerId)
+                        }
                     }
                 }
             }
@@ -422,14 +443,32 @@ export default function ProviderDashboardPage() {
                                             <p className="font-medium">{booking.bookerName}</p>
                                             <p className="text-sm text-muted-foreground">{booking.bookerEmail}</p>
                                         </div>
-                                        <div className="text-right">
-                                            <p className="font-medium">
-                                                {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEE, MMM d')}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} -{' '}
-                                                {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
-                                            </p>
+                                        <div className="flex items-center gap-4">
+                                            {booking.meetingLink && (
+                                                <a
+                                                    href={booking.meetingLink}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                >
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-primary border-primary/20 hover:bg-primary/10"
+                                                    >
+                                                        <Video className="h-4 w-4 mr-1" />
+                                                        Join Call
+                                                    </Button>
+                                                </a>
+                                            )}
+                                            <div className="text-right">
+                                                <p className="font-medium">
+                                                    {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEE, MMM d')}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} -{' '}
+                                                    {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
