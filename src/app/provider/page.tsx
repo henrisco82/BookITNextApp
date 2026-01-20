@@ -85,7 +85,7 @@ export default function ProviderDashboardPage() {
 
     const handleSignOut = async () => {
         await signOut()
-        router.push('/signin')
+        router.push('/')
     }
 
     const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {

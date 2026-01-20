@@ -65,7 +65,7 @@ export default function ProviderDirectoryPage() {
 
     const handleSignOut = async () => {
         await signOut()
-        router.push('/signin')
+        router.push('/')
     }
 
     return (

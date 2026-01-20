@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
     const handleSignOut = async () => {
         await signOut()
-        router.push('/signin')
+        router.push('/')
     }
 
     // Get initials for avatar

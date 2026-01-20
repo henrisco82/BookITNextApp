@@ -145,7 +145,7 @@ export default function EditProfilePage() {
         try {
             await deleteDoc(userDoc(user.id))
             await signOut()
-            router.push('/signin')
+            router.push('/')
         } catch (error) {
             console.error('Error deleting account:', error)
             alert('Failed to delete account. Please try again.')
