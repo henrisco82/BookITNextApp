@@ -3,6 +3,7 @@
 // Provider Directory - browse and search providers
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import {
     usersCollection,
@@ -136,10 +137,22 @@ export default function ProviderDirectoryPage() {
                             <Card key={provider.id} className="border-2 hover:border-primary/50 transition-colors flex flex-col">
                                 <CardHeader>
                                     <div className="flex items-start gap-4">
-                                        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border-2 border-primary/20 flex-shrink-0">
-                                            <span className="text-xl font-semibold text-primary">
-                                                {provider.displayName?.[0]?.toUpperCase() || '?'}
-                                            </span>
+                                        <div className="h-14 w-14 rounded-full overflow-hidden border-2 border-primary/20 flex-shrink-0 bg-gradient-to-br from-primary/20 to-primary/5">
+                                            {provider.imageUrl ? (
+                                                <Image
+                                                    src={provider.imageUrl}
+                                                    alt={provider.displayName}
+                                                    width={56}
+                                                    height={56}
+                                                    className="object-cover w-full h-full"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <span className="text-xl font-semibold text-primary">
+                                                        {provider.displayName?.[0]?.toUpperCase() || '?'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <CardTitle className="truncate">{provider.displayName}</CardTitle>
