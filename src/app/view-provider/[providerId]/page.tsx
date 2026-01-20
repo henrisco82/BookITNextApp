@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { User, PortfolioItem, Review } from '@/types'
 import { formatInTimezone } from '@/lib/timezone'
-import { ArrowLeft, Calendar, Euro, Loader2, MapPin, Star } from 'lucide-react'
+import { ArrowLeft, Calendar, Euro, Loader2, MapPin, Star, Tag } from 'lucide-react'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
 
@@ -176,6 +176,13 @@ export default function ViewProviderPage() {
                                 {/* Provider Details */}
                                 <div className="flex-1">
                                     <h2 className="text-2xl font-bold mb-2">{provider.displayName}</h2>
+
+                                    {provider.category && (
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                                            <Tag className="h-4 w-4" />
+                                            {provider.category}
+                                        </span>
+                                    )}
 
                                     {provider.bio && (
                                         <p className="text-muted-foreground mb-4">{provider.bio}</p>

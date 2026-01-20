@@ -14,8 +14,9 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import type { User } from '@/types'
-import { Search, Users, Clock, Calendar, ArrowRight, LogOut, Home, Euro } from 'lucide-react'
+import type { User, ProviderCategory } from '@/types'
+import { PROVIDER_CATEGORIES } from '@/types'
+import { Search, Users, Clock, Calendar, ArrowRight, LogOut, Home, Euro, Tag, X } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 export default function ProviderDirectoryPage() {
@@ -24,6 +25,7 @@ export default function ProviderDirectoryPage() {
     const [providers, setProviders] = useState<User[]>([])
     const [filteredProviders, setFilteredProviders] = useState<User[]>([])
     const [searchQuery, setSearchQuery] = useState('')
+    const [selectedCategory, setSelectedCategory] = useState<ProviderCategory | ''>('')
     const [isLoading, setIsLoading] = useState(true)
 
     // Fetch all providers
@@ -48,21 +50,28 @@ export default function ProviderDirectoryPage() {
         fetchProviders()
     }, [])
 
-    // Filter providers based on search
+    // Filter providers based on search and category
     useEffect(() => {
-        if (!searchQuery.trim()) {
-            setFilteredProviders(providers)
-            return
+        let filtered = providers
+
+        // Filter by category first
+        if (selectedCategory) {
+            filtered = filtered.filter((p) => p.category === selectedCategory)
         }
 
-        const queryText = searchQuery.toLowerCase()
-        const filtered = providers.filter(
-            (p) =>
-                p.displayName.toLowerCase().includes(queryText) ||
-                p.bio?.toLowerCase().includes(queryText)
-        )
+        // Then filter by search query
+        if (searchQuery.trim()) {
+            const queryText = searchQuery.toLowerCase()
+            filtered = filtered.filter(
+                (p) =>
+                    p.displayName.toLowerCase().includes(queryText) ||
+                    p.bio?.toLowerCase().includes(queryText) ||
+                    p.category?.toLowerCase().includes(queryText)
+            )
+        }
+
         setFilteredProviders(filtered)
-    }, [searchQuery, providers])
+    }, [searchQuery, selectedCategory, providers])
 
     const handleSignOut = async () => {
         await signOut()
@@ -106,18 +115,53 @@ export default function ProviderDirectoryPage() {
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Search */}
-                <div className="mb-8">
-                    <div className="relative max-w-md">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search providers..."
-                            className="w-full pl-10 pr-4 py-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-                        />
+                {/* Search and Filter */}
+                <div className="mb-8 space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        {/* Search Input */}
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by name, category, or bio..."
+                                className="w-full pl-10 pr-4 py-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                            />
+                        </div>
+
+                        {/* Category Filter Dropdown */}
+                        <div className="relative">
+                            <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value as ProviderCategory | '')}
+                                className="pl-10 pr-8 py-3 border rounded-xl bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all appearance-none cursor-pointer min-w-[200px]"
+                            >
+                                <option value="">All Categories</option>
+                                {PROVIDER_CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>
+                                        {cat}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
+
+                    {/* Active Filter Badge */}
+                    {selectedCategory && (
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">Filtered by:</span>
+                            <button
+                                onClick={() => setSelectedCategory('')}
+                                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                            >
+                                <Tag className="h-3 w-3" />
+                                {selectedCategory}
+                                <X className="h-3 w-3 ml-1" />
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Provider Grid */}
@@ -156,6 +200,12 @@ export default function ProviderDirectoryPage() {
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <CardTitle className="truncate">{provider.displayName}</CardTitle>
+                                            {provider.category && (
+                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                                    <Tag className="h-3 w-3" />
+                                                    {provider.category}
+                                                </span>
+                                            )}
                                             <div className="flex items-center justify-between mt-1">
                                                 <CardDescription className="flex items-center gap-1">
                                                     <Clock className="h-3 w-3" />

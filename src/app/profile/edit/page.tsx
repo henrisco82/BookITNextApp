@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro, Tag } from 'lucide-react'
+import { PROVIDER_CATEGORIES } from '@/types'
+import type { ProviderCategory } from '@/types'
 
 export default function EditProfilePage() {
     const router = useRouter()
@@ -23,6 +25,7 @@ export default function EditProfilePage() {
 
     const [formData, setFormData] = useState({
         displayName: '',
+        category: '' as ProviderCategory | '',
         bio: '',
         pricePerSession: '0',
     })
@@ -38,13 +41,14 @@ export default function EditProfilePage() {
         if (user) {
             setFormData({
                 displayName: user.displayName || '',
+                category: user.category || '',
                 bio: user.bio || '',
                 pricePerSession: user.pricePerSession?.toString() || '0',
             })
         }
     }, [user])
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target
         if (name === 'pricePerSession') {
             // Only allow numbers and one decimal point
@@ -104,6 +108,9 @@ export default function EditProfilePage() {
         try {
             await updateProfile({
                 displayName: formData.displayName,
+                category: (user.role === 'provider' || user.role === 'both') && formData.category
+                    ? formData.category as ProviderCategory
+                    : undefined,
                 bio: formData.bio,
                 pricePerSession: (user.role === 'provider' || user.role === 'both')
                     ? parseFloat(formData.pricePerSession) || 0
@@ -252,21 +259,47 @@ export default function EditProfilePage() {
                             </div>
 
                             {(user?.role === 'provider' || user?.role === 'both') && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="pricePerSession" className="flex items-center gap-2">
-                                        <Euro className="h-4 w-4" />
-                                        Price Per Session (EUR)
-                                    </Label>
-                                    <Input
-                                        id="pricePerSession"
-                                        name="pricePerSession"
-                                        type="text"
-                                        inputMode="decimal"
-                                        value={formData.pricePerSession}
-                                        onChange={handleChange}
-                                        placeholder="0.00"
-                                    />
-                                </div>
+                                <>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="category" className="flex items-center gap-2">
+                                            <Tag className="h-4 w-4" />
+                                            Category
+                                        </Label>
+                                        <select
+                                            id="category"
+                                            name="category"
+                                            value={formData.category}
+                                            onChange={handleChange}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            <option value="">Select a category</option>
+                                            {PROVIDER_CATEGORIES.map((cat) => (
+                                                <option key={cat} value={cat}>
+                                                    {cat}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-muted-foreground">
+                                            This helps bookers find you when searching
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="pricePerSession" className="flex items-center gap-2">
+                                            <Euro className="h-4 w-4" />
+                                            Price Per Session (EUR)
+                                        </Label>
+                                        <Input
+                                            id="pricePerSession"
+                                            name="pricePerSession"
+                                            type="text"
+                                            inputMode="decimal"
+                                            value={formData.pricePerSession}
+                                            onChange={handleChange}
+                                            placeholder="0.00"
+                                        />
+                                    </div>
+                                </>
                             )}
 
                             <div className="space-y-2">

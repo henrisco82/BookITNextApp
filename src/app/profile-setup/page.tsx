@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { getUserTimezone, TIMEZONE_OPTIONS } from '@/lib/timezone'
-import type { UserRole } from '@/types'
-import { User, Briefcase, Users, Clock, Globe, Euro } from 'lucide-react'
+import type { UserRole, ProviderCategory } from '@/types'
+import { PROVIDER_CATEGORIES } from '@/types'
+import { User, Briefcase, Users, Clock, Globe, Euro, Tag } from 'lucide-react'
 
 export default function ProfileSetupPage() {
     const router = useRouter()
@@ -19,6 +20,7 @@ export default function ProfileSetupPage() {
     // Form state
     const [displayName, setDisplayName] = useState('')
     const [role, setRole] = useState<UserRole | null>(null)
+    const [category, setCategory] = useState<ProviderCategory | ''>('')
     const [timezone, setTimezone] = useState(getUserTimezone())
     const [defaultSessionMinutes, setDefaultSessionMinutes] = useState(60)
     const [bufferMinutes] = useState(15)
@@ -55,6 +57,11 @@ export default function ProfileSetupPage() {
             return
         }
 
+        if ((role === 'provider' || role === 'both') && !category) {
+            setError('Please select a category')
+            return
+        }
+
         setIsSubmitting(true)
         setError(null)
 
@@ -62,6 +69,7 @@ export default function ProfileSetupPage() {
             await createProfile({
                 displayName: displayName.trim(),
                 role,
+                category: (role === 'provider' || role === 'both') ? category as ProviderCategory : undefined,
                 timezone,
                 defaultSessionMinutes,
                 bufferMinutes,
@@ -216,6 +224,29 @@ export default function ProfileSetupPage() {
 
                             {(role === 'provider' || role === 'both') && (
                                 <>
+                                    <div>
+                                        <label htmlFor="category" className="block text-sm font-medium mb-2">
+                                            <Tag className="h-4 w-4 inline mr-2" />
+                                            Category *
+                                        </label>
+                                        <select
+                                            id="category"
+                                            value={category}
+                                            onChange={(e) => setCategory(e.target.value as ProviderCategory)}
+                                            className="w-full px-4 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                        >
+                                            <option value="">Select a category</option>
+                                            {PROVIDER_CATEGORIES.map((cat) => (
+                                                <option key={cat} value={cat}>
+                                                    {cat}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            This helps bookers find you when searching
+                                        </p>
+                                    </div>
+
                                     <div>
                                         <label htmlFor="price" className="block text-sm font-medium mb-2">
                                             <Euro className="h-4 w-4 inline mr-2" />

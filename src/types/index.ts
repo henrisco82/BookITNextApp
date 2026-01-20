@@ -3,6 +3,32 @@
 // User roles
 export type UserRole = 'provider' | 'booker' | 'both'
 
+// Provider categories
+export const PROVIDER_CATEGORIES = [
+    'Language Teacher',
+    'Career Coach',
+    'Financial Advisor',
+    'Personal Trainer',
+    'Life Coach',
+    'Business Consultant',
+    'Mental Health Counselor',
+    'Nutritionist',
+    'Music Instructor',
+    'Art Teacher',
+    'Academic Tutor',
+    'Legal Consultant',
+    'Tech Mentor',
+    'Real Estate Advisor',
+    'Wedding Planner',
+    'Interior Designer',
+    'Fitness Coach',
+    'Yoga Instructor',
+    'Photography Coach',
+    'Other',
+] as const
+
+export type ProviderCategory = typeof PROVIDER_CATEGORIES[number]
+
 // Booking status
 export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'rejected'
 
@@ -25,6 +51,7 @@ export interface User {
     email: string
     displayName: string
     role: UserRole
+    category?: ProviderCategory // Provider category (e.g., "Language Teacher")
     timezone: string // IANA timezone (e.g., "Europe/Bratislava")
     defaultSessionMinutes: number // Default: 60
     bufferMinutes: number // Default: 15
@@ -88,6 +115,7 @@ export interface CreateUserData {
     email: string
     displayName: string
     role: UserRole
+    category?: ProviderCategory
     timezone: string
     defaultSessionMinutes?: number
     bufferMinutes?: number
@@ -132,6 +160,7 @@ export interface TimeSlot {
 export interface ProviderCard {
     id: string
     displayName: string
+    category?: ProviderCategory
     bio?: string
     timezone: string
     defaultSessionMinutes: number
