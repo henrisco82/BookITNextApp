@@ -49,7 +49,7 @@ export default function ViewProviderPage() {
                 }
 
                 const providerData = providerSnap.data()
-                if (providerData.role !== 'provider') {
+                if (providerData.role !== 'provider' && providerData.role !== 'both') {
                     setError('This user is not a provider')
                     setIsLoading(false)
                     return
@@ -164,6 +164,7 @@ export default function ViewProviderPage() {
                                                 width={128}
                                                 height={128}
                                                 className="object-cover w-full h-full"
+                                                unoptimized
                                             />
                                         ) : (
                                             <div className="h-full w-full bg-primary/10 flex items-center justify-center text-4xl font-bold text-primary">
@@ -175,13 +176,15 @@ export default function ViewProviderPage() {
 
                                 {/* Provider Details */}
                                 <div className="flex-1">
-                                    <h2 className="text-2xl font-bold mb-2">{provider.displayName}</h2>
+                                    <h2 className="text-2xl font-bold">{provider.displayName}</h2>
 
                                     {provider.category && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-3 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                                            <Tag className="h-4 w-4" />
-                                            {provider.category}
-                                        </span>
+                                        <div className="mt-2 mb-3">
+                                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                                                <Tag className="h-4 w-4" />
+                                                {provider.category}
+                                            </span>
+                                        </div>
                                     )}
 
                                     {provider.bio && (

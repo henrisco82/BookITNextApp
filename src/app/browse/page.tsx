@@ -189,6 +189,7 @@ export default function ProviderDirectoryPage() {
                                                     width={56}
                                                     height={56}
                                                     className="object-cover w-full h-full"
+                                                    unoptimized
                                                 />
                                             ) : (
                                                 <div className="w-full h-full flex items-center justify-center">
@@ -201,12 +202,14 @@ export default function ProviderDirectoryPage() {
                                         <div className="min-w-0 flex-1">
                                             <CardTitle className="truncate">{provider.displayName}</CardTitle>
                                             {provider.category && (
-                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                                                    <Tag className="h-3 w-3" />
-                                                    {provider.category}
-                                                </span>
+                                                <div className="mt-1">
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                                                        <Tag className="h-3 w-3" />
+                                                        {provider.category}
+                                                    </span>
+                                                </div>
                                             )}
-                                            <div className="flex items-center justify-between mt-1">
+                                            <div className="flex items-center justify-between mt-2">
                                                 <CardDescription className="flex items-center gap-1">
                                                     <Clock className="h-3 w-3" />
                                                     {provider.defaultSessionMinutes} min
