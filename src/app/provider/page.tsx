@@ -465,49 +465,48 @@ export default function ProviderDashboardPage() {
                                 {upcomingBookings.map((booking) => (
                                     <div
                                         key={booking.id}
-                                        className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                                        className="p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
                                     >
-                                        <div>
-                                            <p className="font-medium">{booking.bookerName}</p>
-                                            <p className="text-sm text-muted-foreground">{booking.bookerEmail}</p>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            {conversationIds[booking.id] && (
-                                                <Link href={`/messages/${conversationIds[booking.id]}`}>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950"
-                                                    >
-                                                        <MessageSquare className="h-4 w-4 mr-1" />
-                                                        Message
-                                                    </Button>
-                                                </Link>
-                                            )}
-                                            {booking.meetingLink && (
-                                                <a
-                                                    href={booking.meetingLink}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                >
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-primary border-primary/20 hover:bg-primary/10"
-                                                    >
-                                                        <Video className="h-4 w-4 mr-1" />
-                                                        Join Call
-                                                    </Button>
-                                                </a>
-                                            )}
-                                            <div className="text-right">
-                                                <p className="font-medium">
-                                                    {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEE, MMM d')}
+                                        {/* Mobile: stacked layout, Desktop: side by side */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            {/* Booker info and date/time */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium truncate">{booking.bookerName}</p>
+                                                <p className="text-sm text-muted-foreground truncate">{booking.bookerEmail}</p>
+                                                <p className="text-sm text-primary mt-1">
+                                                    {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEE, MMM d')} · {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} - {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
                                                 </p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} -{' '}
-                                                    {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
-                                                </p>
+                                            </div>
+                                            {/* Action buttons */}
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                {conversationIds[booking.id] && (
+                                                    <Link href={`/messages/${conversationIds[booking.id]}`}>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950"
+                                                        >
+                                                            <MessageSquare className="h-4 w-4 sm:mr-1" />
+                                                            <span className="hidden sm:inline">Message</span>
+                                                        </Button>
+                                                    </Link>
+                                                )}
+                                                {booking.meetingLink && (
+                                                    <a
+                                                        href={booking.meetingLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-primary border-primary/20 hover:bg-primary/10"
+                                                        >
+                                                            <Video className="h-4 w-4 sm:mr-1" />
+                                                            <span className="hidden sm:inline">Join Call</span>
+                                                        </Button>
+                                                    </a>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

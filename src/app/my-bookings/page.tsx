@@ -261,41 +261,41 @@ export default function BookerDashboardPage() {
                                             return (
                                                 <div
                                                     key={booking.id}
-                                                    className="flex items-center justify-between p-4 rounded-lg border bg-card"
+                                                    className="p-4 rounded-lg border bg-card"
                                                 >
-                                                    <div>
-                                                        <p className="font-medium">{booking.providerName}</p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {formatInTimezone(
-                                                                booking.startUTC,
-                                                                user?.timezone || 'UTC',
-                                                                'EEEE, MMMM d, yyyy'
-                                                            )}
-                                                        </p>
-                                                        <p className="text-sm text-primary">
-                                                            <Clock className="h-3 w-3 inline mr-1" />
-                                                            {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} -{' '}
-                                                            {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
-                                                        </p>
-                                                    </div>
-                                                    <div className="text-right">
-                                                        {booking.status === 'pending' ? (
-                                                            <div className="flex items-center gap-1 text-sm text-yellow-500 mb-2">
-                                                                <Clock className="h-4 w-4" />
-                                                                Pending confirmation
+                                                    {/* Mobile: stacked layout, Desktop: side by side */}
+                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                        {/* Provider info and date/time */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <p className="font-medium truncate">{booking.providerName}</p>
+                                                                {booking.status === 'pending' ? (
+                                                                    <span className="inline-flex items-center gap-1 text-xs text-yellow-500 bg-yellow-500/10 px-2 py-0.5 rounded-full">
+                                                                        <Clock className="h-3 w-3" />
+                                                                        Pending
+                                                                    </span>
+                                                                ) : minutesUntil <= 60 ? (
+                                                                    <span className="inline-flex items-center gap-1 text-xs text-amber-500 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                                                                        <AlertCircle className="h-3 w-3" />
+                                                                        Soon
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                                                        <CheckCircle className="h-3 w-3" />
+                                                                        Confirmed
+                                                                    </span>
+                                                                )}
                                                             </div>
-                                                        ) : minutesUntil <= 60 ? (
-                                                            <div className="flex items-center gap-1 text-sm text-amber-500 mb-2">
-                                                                <AlertCircle className="h-4 w-4" />
-                                                                Starting soon
-                                                            </div>
-                                                        ) : (
-                                                            <div className="flex items-center gap-1 text-sm text-green-500 mb-2">
-                                                                <CheckCircle className="h-4 w-4" />
-                                                                Confirmed
-                                                            </div>
-                                                        )}
-                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {formatInTimezone(booking.startUTC, user?.timezone || 'UTC', 'EEE, MMM d, yyyy')}
+                                                            </p>
+                                                            <p className="text-sm text-primary">
+                                                                <Clock className="h-3 w-3 inline mr-1" />
+                                                                {formatTimeInTimezone(booking.startUTC, user?.timezone || 'UTC')} - {formatTimeInTimezone(booking.endUTC, user?.timezone || 'UTC')}
+                                                            </p>
+                                                        </div>
+                                                        {/* Action buttons */}
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
                                                             {booking.status === 'confirmed' && conversationIds[booking.id] && (
                                                                 <Link href={`/messages/${conversationIds[booking.id]}`}>
                                                                     <Button
@@ -303,8 +303,8 @@ export default function BookerDashboardPage() {
                                                                         size="sm"
                                                                         className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950"
                                                                     >
-                                                                        <MessageSquare className="h-4 w-4 mr-1" />
-                                                                        Message
+                                                                        <MessageSquare className="h-4 w-4 sm:mr-1" />
+                                                                        <span className="hidden sm:inline">Message</span>
                                                                     </Button>
                                                                 </Link>
                                                             )}
@@ -319,8 +319,8 @@ export default function BookerDashboardPage() {
                                                                         size="sm"
                                                                         className="text-primary border-primary/20 hover:bg-primary/10"
                                                                     >
-                                                                        <Video className="h-4 w-4 mr-1" />
-                                                                        Join Call
+                                                                        <Video className="h-4 w-4 sm:mr-1" />
+                                                                        <span className="hidden sm:inline">Join</span>
                                                                     </Button>
                                                                 </a>
                                                             )}
@@ -332,11 +332,11 @@ export default function BookerDashboardPage() {
                                                                 className="text-destructive hover:text-destructive"
                                                             >
                                                                 {cancellingId === booking.id ? (
-                                                                    'Cancelling...'
+                                                                    '...'
                                                                 ) : (
                                                                     <>
-                                                                        <X className="h-4 w-4 mr-1" />
-                                                                        Cancel
+                                                                        <X className="h-4 w-4 sm:mr-1" />
+                                                                        <span className="hidden sm:inline">Cancel</span>
                                                                     </>
                                                                 )}
                                                             </Button>
