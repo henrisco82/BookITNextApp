@@ -84,10 +84,12 @@ export function useCurrentUser(): UseCurrentUserReturn {
                 email,
                 displayName: data.displayName,
                 role: data.role,
+                category: data.category,
                 timezone: data.timezone,
                 defaultSessionMinutes: data.defaultSessionMinutes || 60,
                 bufferMinutes: data.bufferMinutes || 15,
                 bio: data.bio,
+                imageUrl: clerkUser.imageUrl || undefined, // Include Clerk profile image if exists
                 notificationSettings: {
                     email: {
                         newBookingRequest: false,
@@ -143,7 +145,7 @@ export function useCurrentUser(): UseCurrentUserReturn {
         [clerkUser]
     )
 
-    // Upload profile image to Clerk
+    // Upload profile image to Clerk and save URL to Firestore
     const setProfileImage = useCallback(
         async (file: File) => {
             if (!clerkUser) {
@@ -152,6 +154,15 @@ export function useCurrentUser(): UseCurrentUserReturn {
 
             try {
                 await clerkUser.setProfileImage({ file })
+                // Reload user to get updated imageUrl
+                await clerkUser.reload()
+                // Save the Clerk imageUrl to Firestore so other users can see it
+                if (clerkUser.imageUrl) {
+                    await updateDoc(userDoc(clerkUser.id), {
+                        imageUrl: clerkUser.imageUrl,
+                        updatedAt: Timestamp.now(),
+                    })
+                }
             } catch (err) {
                 console.error('Error updating profile image:', err)
                 throw err
