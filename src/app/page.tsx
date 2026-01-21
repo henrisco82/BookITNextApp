@@ -17,6 +17,7 @@ import {
     CheckCircle,
     ArrowRight,
     Sparkles,
+    MessageSquare,
 } from 'lucide-react'
 
 export default function LandingPage() {
@@ -104,6 +105,10 @@ export default function LandingPage() {
                             <div className="flex items-center gap-2">
                                 <Video className="h-5 w-5 text-blue-500" />
                                 <span>HD Video Calls</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <MessageSquare className="h-5 w-5 text-purple-500" />
+                                <span>In-App Messaging</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Star className="h-5 w-5 text-yellow-500" />
@@ -202,6 +207,13 @@ export default function LandingPage() {
                                 bg: 'bg-orange-500/10',
                             },
                             {
+                                icon: MessageSquare,
+                                title: 'In-App Messaging',
+                                description: 'Chat directly with your provider before and after sessions. Real-time notifications.',
+                                color: 'text-indigo-500',
+                                bg: 'bg-indigo-500/10',
+                            },
+                            {
                                 icon: Shield,
                                 title: 'Money-Back Guarantee',
                                 description: 'Full refund if your session is declined. Partial refund for cancellations.',
@@ -293,6 +305,7 @@ export default function LandingPage() {
                                     'Set your own rates and availability',
                                     'Accept payments directly to your bank',
                                     'Manage bookings from one dashboard',
+                                    'Message clients directly in the app',
                                     'Build your reputation with reviews',
                                     'Showcase your work with portfolios',
                                 ].map((item, i) => (
