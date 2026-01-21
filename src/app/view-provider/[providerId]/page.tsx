@@ -19,12 +19,14 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import type { User, PortfolioItem, Review } from '@/types'
 import { formatInTimezone } from '@/lib/timezone'
 import { ArrowLeft, Calendar, Euro, Loader2, MapPin, Star, Tag } from 'lucide-react'
+import { useIsBooker } from '@/hooks/useCurrentUser'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
 
 export default function ViewProviderPage() {
     const params = useParams()
     const providerId = params.providerId as string
+    const isBooker = useIsBooker()
 
     const [provider, setProvider] = useState<User | null>(null)
     const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([])
@@ -115,8 +117,8 @@ export default function ViewProviderPage() {
         return (
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
                 <p className="text-muted-foreground">{error || 'Provider not found'}</p>
-                <Link href="/browse">
-                    <Button variant="outline">Browse Providers</Button>
+                <Link href={isBooker ? "/browse" : "/dashboard"}>
+                    <Button variant="outline">{isBooker ? "Browse Providers" : "Go to Dashboard"}</Button>
                 </Link>
             </div>
         )

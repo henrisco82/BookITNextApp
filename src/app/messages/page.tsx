@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { useCurrentUser } from '@/hooks/useCurrentUser'
+import { useCurrentUser, useIsBooker } from '@/hooks/useCurrentUser'
 import { useConversations } from '@/hooks/useConversations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ import { formatDistanceToNow } from 'date-fns'
 export default function MessagesPage() {
     const { user, isLoading: isUserLoading } = useCurrentUser()
     const { conversations, isLoading: isConvoLoading } = useConversations(user?.id)
+    const isBooker = useIsBooker()
     const router = useRouter()
 
     // Redirect to dashboard if not logged in
@@ -93,9 +94,11 @@ export default function MessagesPage() {
                                 <p className="text-muted-foreground mb-6">
                                     Conversations will appear here when bookings are confirmed
                                 </p>
-                                <Link href="/browse">
-                                    <Button>Browse Providers</Button>
-                                </Link>
+                                {isBooker && (
+                                    <Link href="/browse">
+                                        <Button>Browse Providers</Button>
+                                    </Link>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-2">
