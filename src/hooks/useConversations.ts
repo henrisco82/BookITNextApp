@@ -95,14 +95,21 @@ export function useMessages(
             return
         }
 
+        // Query without orderBy to avoid needing a composite index
+        // We'll sort client-side instead
         const q = query(
             messagesCollection,
-            where('conversationId', '==', conversationId),
-            orderBy('createdAt', 'asc')
+            where('conversationId', '==', conversationId)
         )
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const msgs = snapshot.docs.map((doc) => doc.data() as Message)
+            // Sort by createdAt client-side
+            msgs.sort((a, b) => {
+                const aTime = a.createdAt?.getTime?.() || 0
+                const bTime = b.createdAt?.getTime?.() || 0
+                return aTime - bTime
+            })
             setMessages(msgs)
             setIsLoading(false)
         }, (err) => {
