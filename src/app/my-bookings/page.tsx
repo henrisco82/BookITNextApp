@@ -62,20 +62,24 @@ export default function BookerDashboardPage() {
                 const reviewsSnap = await getDocs(reviewsQ)
                 const reviewedIds = new Set(reviewsSnap.docs.map(doc => doc.data().bookingId))
                 setReviewedBookings(reviewedIds)
+                setIsLoading(false)
 
-                // Fetch conversation IDs for confirmed bookings
+                // Fetch conversation IDs for confirmed bookings (non-blocking)
                 const confirmedBookings = bookingList.filter(b => b.status === 'confirmed')
                 const convoIds: Record<string, string> = {}
                 for (const booking of confirmedBookings) {
-                    const convo = await getConversationByBookingId(booking.id)
-                    if (convo) {
-                        convoIds[booking.id] = convo.id
+                    try {
+                        const convo = await getConversationByBookingId(booking.id)
+                        if (convo) {
+                            convoIds[booking.id] = convo.id
+                        }
+                    } catch (err) {
+                        console.error('Error fetching conversation for booking:', booking.id, err)
                     }
                 }
                 setConversationIds(convoIds)
             } catch (error) {
                 console.error('Error fetching data:', error)
-            } finally {
                 setIsLoading(false)
             }
         }
