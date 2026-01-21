@@ -12,7 +12,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video } from 'lucide-react'
+import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video, MessageSquare } from 'lucide-react'
+import { getConversationByBookingId } from '@/hooks/useConversations'
 
 // Helper to get timestamp in milliseconds from Date or Firestore Timestamp
 const getTimeMs = (date: Date | { seconds: number }): number => {
@@ -27,6 +28,7 @@ export default function BookerDashboardPage() {
     const [reviewedBookings, setReviewedBookings] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(true)
     const [cancellingId, setCancellingId] = useState<string | null>(null)
+    const [conversationIds, setConversationIds] = useState<Record<string, string>>({})
     const { confirm, ConfirmDialog } = useConfirmDialog()
 
     // Fetch bookings and reviews
@@ -60,6 +62,17 @@ export default function BookerDashboardPage() {
                 const reviewsSnap = await getDocs(reviewsQ)
                 const reviewedIds = new Set(reviewsSnap.docs.map(doc => doc.data().bookingId))
                 setReviewedBookings(reviewedIds)
+
+                // Fetch conversation IDs for confirmed bookings
+                const confirmedBookings = bookingList.filter(b => b.status === 'confirmed')
+                const convoIds: Record<string, string> = {}
+                for (const booking of confirmedBookings) {
+                    const convo = await getConversationByBookingId(booking.id)
+                    if (convo) {
+                        convoIds[booking.id] = convo.id
+                    }
+                }
+                setConversationIds(convoIds)
             } catch (error) {
                 console.error('Error fetching data:', error)
             } finally {
@@ -283,6 +296,18 @@ export default function BookerDashboardPage() {
                                                             </div>
                                                         )}
                                                         <div className="flex items-center gap-2">
+                                                            {booking.status === 'confirmed' && conversationIds[booking.id] && (
+                                                                <Link href={`/messages/${conversationIds[booking.id]}`}>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950"
+                                                                    >
+                                                                        <MessageSquare className="h-4 w-4 mr-1" />
+                                                                        Message
+                                                                    </Button>
+                                                                </Link>
+                                                            )}
                                                             {booking.status === 'confirmed' && booking.meetingLink && (
                                                                 <a
                                                                     href={booking.meetingLink}

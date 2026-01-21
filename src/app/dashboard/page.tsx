@@ -19,8 +19,10 @@ import {
     Briefcase,
     ArrowRight,
     Globe,
-    Settings
+    Settings,
+    MessageSquare
 } from 'lucide-react'
+import { MessageBadge } from '@/components/MessageBadge'
 
 export default function DashboardPage() {
     const { signOut } = useAuth()
@@ -230,6 +232,29 @@ export default function DashboardPage() {
                             </CardContent>
                         </Card>
                     )}
+
+                    {/* Messages */}
+                    <Card className="border-2 border-purple-500/20 bg-purple-500/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                <MessageSquare className="h-5 w-5" />
+                                Messages
+                                <MessageBadge />
+                            </CardTitle>
+                            <CardDescription>Chat with providers and bookers</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Link href="/messages">
+                                <Button className="w-full justify-between" variant="outline">
+                                    <span className="flex items-center gap-2">
+                                        <MessageSquare className="h-4 w-4" />
+                                        View Messages
+                                    </span>
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                        </CardContent>
+                    </Card>
 
                     {/* Account Settings */}
                     <Card className="border-2">

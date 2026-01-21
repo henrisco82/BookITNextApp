@@ -22,7 +22,7 @@ import type {
     CollectionReference,
 } from 'firebase/firestore'
 import { db } from './firebase'
-import type { User, Availability, Booking, PortfolioItem, Review } from '@/types'
+import type { User, Availability, Booking, PortfolioItem, Review, Conversation, Message } from '@/types'
 
 // Helper to convert Firestore Timestamp to Date
 const timestampToDate = (timestamp: Timestamp | Date | undefined): Date => {
@@ -228,12 +228,82 @@ const reviewConverter: FirestoreDataConverter<Review> = {
     },
 }
 
+// Conversation converter
+const conversationConverter: FirestoreDataConverter<Conversation> = {
+    toFirestore(conversation: WithFieldValue<Conversation>): DocumentData {
+        return {
+            participantIds: conversation.participantIds,
+            providerId: conversation.providerId,
+            bookerId: conversation.bookerId,
+            providerName: conversation.providerName,
+            bookerName: conversation.bookerName,
+            providerImageUrl: conversation.providerImageUrl ?? null,
+            bookerImageUrl: conversation.bookerImageUrl ?? null,
+            bookingId: conversation.bookingId,
+            lastMessage: conversation.lastMessage ?? null,
+            lastMessageAt: conversation.lastMessageAt ?? null,
+            lastMessageSenderId: conversation.lastMessageSenderId ?? null,
+            unreadCount: conversation.unreadCount,
+            createdAt: conversation.createdAt,
+            updatedAt: conversation.updatedAt,
+        }
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot): Conversation {
+        const data = snapshot.data()
+        return {
+            id: snapshot.id,
+            participantIds: data.participantIds || [],
+            providerId: data.providerId,
+            bookerId: data.bookerId,
+            providerName: data.providerName,
+            bookerName: data.bookerName,
+            providerImageUrl: data.providerImageUrl ?? undefined,
+            bookerImageUrl: data.bookerImageUrl ?? undefined,
+            bookingId: data.bookingId,
+            lastMessage: data.lastMessage ?? undefined,
+            lastMessageAt: data.lastMessageAt ? timestampToDate(data.lastMessageAt) : undefined,
+            lastMessageSenderId: data.lastMessageSenderId ?? undefined,
+            unreadCount: data.unreadCount || {},
+            createdAt: timestampToDate(data.createdAt),
+            updatedAt: timestampToDate(data.updatedAt),
+        }
+    },
+}
+
+// Message converter
+const messageConverter: FirestoreDataConverter<Message> = {
+    toFirestore(message: WithFieldValue<Message>): DocumentData {
+        return {
+            conversationId: message.conversationId,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            content: message.content,
+            status: message.status,
+            createdAt: message.createdAt,
+        }
+    },
+    fromFirestore(snapshot: QueryDocumentSnapshot): Message {
+        const data = snapshot.data()
+        return {
+            id: snapshot.id,
+            conversationId: data.conversationId,
+            senderId: data.senderId,
+            senderName: data.senderName,
+            content: data.content,
+            status: data.status || 'sent',
+            createdAt: timestampToDate(data.createdAt),
+        }
+    },
+}
+
 // Collection references with converters
 export const usersCollection = collection(db, 'users').withConverter(userConverter)
 export const availabilityCollection = collection(db, 'availability').withConverter(availabilityConverter)
 export const bookingsCollection = collection(db, 'bookings').withConverter(bookingConverter)
 export const portfolioCollection = collection(db, 'portfolio').withConverter(portfolioConverter)
 export const reviewsCollection = collection(db, 'reviews').withConverter(reviewConverter)
+export const conversationsCollection = collection(db, 'conversations').withConverter(conversationConverter)
+export const messagesCollection = collection(db, 'messages').withConverter(messageConverter)
 
 // Document references
 export const userDoc = (userId: string) => doc(db, 'users', userId).withConverter(userConverter)
@@ -241,6 +311,8 @@ export const availabilityDoc = (availabilityId: string) => doc(db, 'availability
 export const bookingDoc = (bookingId: string) => doc(db, 'bookings', bookingId).withConverter(bookingConverter)
 export const portfolioDoc = (itemId: string) => doc(db, 'portfolio', itemId).withConverter(portfolioConverter)
 export const reviewDoc = (reviewId: string) => doc(db, 'reviews', reviewId).withConverter(reviewConverter)
+export const conversationDoc = (conversationId: string) => doc(db, 'conversations', conversationId).withConverter(conversationConverter)
+export const messageDoc = (messageId: string) => doc(db, 'messages', messageId).withConverter(messageConverter)
 
 // Export Firestore utilities for use in hooks
 export {

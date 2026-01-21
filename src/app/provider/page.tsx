@@ -20,9 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video, MessageSquare } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { sendBookerNotification } from '@/lib/email'
+import { getOrCreateConversation, getConversationByBookingId } from '@/hooks/useConversations'
 
 export default function ProviderDashboardPage() {
     const { user, isLoading: isUserLoading } = useCurrentUser()
@@ -31,6 +32,7 @@ export default function ProviderDashboardPage() {
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
     const [pendingBookings, setPendingBookings] = useState<Booking[]>([])
     const [isLoading, setIsLoading] = useState(true)
+    const [conversationIds, setConversationIds] = useState<Record<string, string>>({})
 
     // Fetch upcoming bookings
     useEffect(() => {
@@ -73,6 +75,16 @@ export default function ProviderDashboardPage() {
 
                 setUpcomingBookings(confirmed.slice(0, 5))
                 setPendingBookings(pending)
+
+                // Fetch conversation IDs for confirmed bookings
+                const convoIds: Record<string, string> = {}
+                for (const booking of confirmed) {
+                    const convo = await getConversationByBookingId(booking.id)
+                    if (convo) {
+                        convoIds[booking.id] = convo.id
+                    }
+                }
+                setConversationIds(convoIds)
             } catch (error) {
                 console.error('Error fetching bookings:', error)
             } finally {
@@ -135,6 +147,22 @@ export default function ProviderDashboardPage() {
 
                     const bookerSnap = await getDoc(userDoc(booking.bookerId))
                     const bookerData = bookerSnap.exists() ? bookerSnap.data() : null
+
+                    // Create conversation for this booking
+                    try {
+                        const conversation = await getOrCreateConversation({
+                            providerId: booking.providerId,
+                            bookerId: booking.bookerId,
+                            providerName: booking.providerName,
+                            bookerName: booking.bookerName,
+                            providerImageUrl: user?.imageUrl,
+                            bookerImageUrl: bookerData?.imageUrl,
+                            bookingId: booking.id,
+                        })
+                        setConversationIds(prev => ({ ...prev, [booking.id]: conversation.id }))
+                    } catch (error) {
+                        console.error('Error creating conversation:', error)
+                    }
 
                     if (bookerData?.notificationSettings?.email?.bookingConfirmed) {
                         // Use booker email from booking, or fall back to user profile email
@@ -444,6 +472,18 @@ export default function ProviderDashboardPage() {
                                             <p className="text-sm text-muted-foreground">{booking.bookerEmail}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
+                                            {conversationIds[booking.id] && (
+                                                <Link href={`/messages/${conversationIds[booking.id]}`}>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-purple-600 border-purple-200 hover:bg-purple-50 dark:text-purple-400 dark:border-purple-800 dark:hover:bg-purple-950"
+                                                    >
+                                                        <MessageSquare className="h-4 w-4 mr-1" />
+                                                        Message
+                                                    </Button>
+                                                </Link>
+                                            )}
                                             {booking.meetingLink && (
                                                 <a
                                                     href={booking.meetingLink}

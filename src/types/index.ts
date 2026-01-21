@@ -190,3 +190,36 @@ export interface Review {
     comment: string
     createdAt: Date
 }
+
+// Message status
+export type MessageStatus = 'sent' | 'delivered' | 'read'
+
+// Conversation between provider and booker
+export interface Conversation {
+    id: string
+    participantIds: string[] // [providerId, bookerId]
+    providerId: string
+    bookerId: string
+    providerName: string
+    bookerName: string
+    providerImageUrl?: string
+    bookerImageUrl?: string
+    bookingId: string // The booking that initiated this conversation
+    lastMessage?: string
+    lastMessageAt?: Date
+    lastMessageSenderId?: string
+    unreadCount: { [userId: string]: number } // Unread count per participant
+    createdAt: Date
+    updatedAt: Date
+}
+
+// Message in a conversation
+export interface Message {
+    id: string
+    conversationId: string
+    senderId: string
+    senderName: string
+    content: string
+    status: MessageStatus
+    createdAt: Date
+}
