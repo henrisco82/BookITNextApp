@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Header, NavItem } from '@/components/Header'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video, MessageSquare } from 'lucide-react'
+import { Calendar, Clock, Users, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video, MessageSquare, Home, Search } from 'lucide-react'
 import { getConversationByBookingId } from '@/hooks/useConversations'
 
 // Helper to get timestamp in milliseconds from Date or Firestore Timestamp
@@ -175,7 +175,8 @@ export default function BookerDashboardPage() {
     )
 
     const navItems: NavItem[] = [
-        { href: '/browse', label: 'Browse Providers', icon: <Search className="h-4 w-4" />, variant: 'outline' },
+        { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
+        { href: '/browse', label: 'Browse Providers', icon: <Users className="h-4 w-4" /> },
     ]
 
     return (

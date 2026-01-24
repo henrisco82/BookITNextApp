@@ -71,7 +71,7 @@ export default function ProviderDirectoryPage() {
 
     const navItems: NavItem[] = [
         { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
-        { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" />, variant: 'outline' },
+        { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" /> },
     ]
 
     return (
