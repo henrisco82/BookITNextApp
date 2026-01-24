@@ -13,7 +13,6 @@ import { Header, NavItem } from '@/components/Header'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
 import { Calendar, Clock, Users, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video, MessageSquare, Home, Search } from 'lucide-react'
-import { getConversationByBookingId } from '@/hooks/useConversations'
 
 // Helper to get timestamp in milliseconds from Date or Firestore Timestamp
 const getTimeMs = (date: Date | { seconds: number }): number => {
@@ -28,7 +27,6 @@ export default function BookerDashboardPage() {
     const [reviewedBookings, setReviewedBookings] = useState<Set<string>>(new Set())
     const [isLoading, setIsLoading] = useState(true)
     const [cancellingId, setCancellingId] = useState<string | null>(null)
-    const [conversationIds, setConversationIds] = useState<Record<string, string>>({})
     const { confirm, ConfirmDialog } = useConfirmDialog()
 
     // Fetch bookings and reviews
@@ -54,38 +52,10 @@ export default function BookerDashboardPage() {
 
                 setBookings(bookingList)
 
-                // Fetch reviews and conversation IDs in parallel
-                const confirmedBookings = bookingList.filter(b => b.status === 'confirmed')
-
-                const [reviewsSnap, convoResults] = await Promise.all([
-                    // Fetch reviews by this user
-                    getDocs(query(reviewsCollection, where('bookerId', '==', user.id))),
-                    // Fetch all conversation IDs in parallel
-                    Promise.all(
-                        confirmedBookings.map(async (booking) => {
-                            try {
-                                const convo = await getConversationByBookingId(booking.id)
-                                return convo ? { bookingId: booking.id, convoId: convo.id } : null
-                            } catch (err) {
-                                console.error('Error fetching conversation for booking:', booking.id, err)
-                                return null
-                            }
-                        })
-                    )
-                ])
-
-                // Process reviews
+                // Fetch reviews by this user
+                const reviewsSnap = await getDocs(query(reviewsCollection, where('bookerId', '==', user.id)))
                 const reviewedIds = new Set(reviewsSnap.docs.map(doc => doc.data().bookingId))
                 setReviewedBookings(reviewedIds)
-
-                // Process conversation IDs
-                const convoIds: Record<string, string> = {}
-                for (const result of convoResults) {
-                    if (result) {
-                        convoIds[result.bookingId] = result.convoId
-                    }
-                }
-                setConversationIds(convoIds)
 
                 setIsLoading(false)
             } catch (error) {
@@ -300,8 +270,8 @@ export default function BookerDashboardPage() {
                                                         </div>
                                                         {/* Action buttons */}
                                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                                            {booking.status === 'confirmed' && conversationIds[booking.id] && (
-                                                                <Link href={`/messages/${conversationIds[booking.id]}`}>
+                                                            {booking.status === 'confirmed' && (
+                                                                <Link href="/messages">
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
