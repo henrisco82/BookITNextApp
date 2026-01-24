@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useCurrentUser, useIsProvider, useIsBooker } from '@/hooks/useCurrentUser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Header } from '@/components/Header'
+import { Header, NavItem } from '@/components/Header'
 import {
     Mail,
     Calendar,
@@ -56,6 +56,18 @@ export default function DashboardPage() {
         return firestoreUser?.email?.[0]?.toUpperCase() || '?'
     }
 
+    // Navigation items based on user role
+    const navItems: NavItem[] = [
+        ...(isProvider ? [
+            { href: '/provider', label: 'Provider Dashboard', icon: <Briefcase className="h-4 w-4" /> },
+        ] : []),
+        ...(isBooker ? [
+            { href: '/browse', label: 'Browse Providers', icon: <Users className="h-4 w-4" /> },
+            { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" /> },
+        ] : []),
+        { href: '/messages', label: 'Messages', icon: <MessageSquare className="h-4 w-4" /> },
+    ]
+
     if (isLoading || needsProfileSetup) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -70,6 +82,7 @@ export default function DashboardPage() {
             <Header
                 title="BookIt"
                 titleIcon={<Calendar className="h-5 w-5 text-primary" />}
+                navItems={navItems}
             />
 
             {/* Main Content */}

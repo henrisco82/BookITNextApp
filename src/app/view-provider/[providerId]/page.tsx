@@ -15,10 +15,10 @@ import {
 } from '@/lib/firestore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Header } from '@/components/Header'
+import { Header, NavItem } from '@/components/Header'
 import type { User, PortfolioItem, Review } from '@/types'
 import { formatInTimezone } from '@/lib/timezone'
-import { ArrowLeft, Calendar, Euro, Loader2, MapPin, Star, Tag } from 'lucide-react'
+import { ArrowLeft, Calendar, Euro, Home, Loader2, MapPin, Star, Tag, Users } from 'lucide-react'
 import { useIsBooker } from '@/hooks/useCurrentUser'
 import Lightbox from 'yet-another-react-lightbox'
 import 'yet-another-react-lightbox/styles.css'
@@ -105,6 +105,16 @@ export default function ViewProviderPage() {
         ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
         : 0
 
+    // Navigation items for header
+    const navItems: NavItem[] = isBooker
+        ? [
+            { href: '/browse', label: 'Browse Providers', icon: <Users className="h-4 w-4" /> },
+            { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" /> },
+        ]
+        : [
+            { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
+        ]
+
     if (isLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -139,6 +149,7 @@ export default function ViewProviderPage() {
                     title="Provider Profile"
                     backHref="/browse"
                     backIcon={<ArrowLeft className="h-5 w-5" />}
+                    navItems={navItems}
                     showSignOut={false}
                     maxWidth="max-w-6xl"
                 />

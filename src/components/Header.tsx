@@ -109,12 +109,12 @@ export function Header({
                 </div>
 
                 {/* Mobile Navigation Menu */}
-                {isMenuOpen && (
+                {isMenuOpen && (navItems.length > 0 || showSignOut) && (
                     <div className="md:hidden border-t py-4 space-y-2">
                         {navItems.map((item, index) => (
                             <Link key={index} href={item.href} onClick={closeMenu}>
                                 <Button
-                                    variant={item.variant || 'ghost'}
+                                    variant="ghost"
                                     className="w-full justify-start gap-2"
                                 >
                                     {item.icon}

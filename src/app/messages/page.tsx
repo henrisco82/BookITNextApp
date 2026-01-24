@@ -9,8 +9,8 @@ import { useCurrentUser, useIsBooker } from '@/hooks/useCurrentUser'
 import { useConversations } from '@/hooks/useConversations'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Header } from '@/components/Header'
-import { MessageSquare, ArrowLeft, Clock } from 'lucide-react'
+import { Header, NavItem } from '@/components/Header'
+import { MessageSquare, ArrowLeft, Clock, Home, Calendar, Users } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 export default function MessagesPage() {
@@ -47,6 +47,15 @@ export default function MessagesPage() {
             .slice(0, 2)
     }
 
+    // Navigation items based on user role
+    const navItems: NavItem[] = [
+        { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
+        ...(isBooker ? [
+            { href: '/browse', label: 'Browse Providers', icon: <Users className="h-4 w-4" /> },
+            { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" /> },
+        ] : []),
+    ]
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20 flex items-center justify-center">
@@ -62,6 +71,7 @@ export default function MessagesPage() {
                 title="Messages"
                 backHref="/dashboard"
                 backIcon={<ArrowLeft className="h-5 w-5" />}
+                navItems={navItems}
                 showSignOut={false}
                 maxWidth="max-w-4xl"
             />

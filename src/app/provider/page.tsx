@@ -17,9 +17,9 @@ import {
 import { formatInTimezone, formatTimeInTimezone } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Header } from '@/components/Header'
+import { Header, NavItem } from '@/components/Header'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video, MessageSquare } from 'lucide-react'
+import { Calendar, Clock, Users, Settings, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video, MessageSquare, Home } from 'lucide-react'
 import { sendBookerNotification } from '@/lib/email'
 import { getOrCreateConversation, getConversationByBookingId } from '@/hooks/useConversations'
 
@@ -199,6 +199,10 @@ export default function ProviderDashboardPage() {
                 title="Provider Dashboard"
                 backHref="/dashboard"
                 backIcon={<ArrowLeft className="h-5 w-5" />}
+                navItems={[
+                    { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
+                    { href: '/messages', label: 'Messages', icon: <MessageSquare className="h-4 w-4" /> },
+                ]}
             />
 
             {/* Main Content */}
