@@ -9,10 +9,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useCurrentUser, useIsProvider, useIsBooker } from '@/hooks/useCurrentUser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import {
     Mail,
-    LogOut,
     Calendar,
     Clock,
     Users,
@@ -20,7 +19,8 @@ import {
     ArrowRight,
     Globe,
     Settings,
-    MessageSquare
+    MessageSquare,
+    LogOut
 } from 'lucide-react'
 import { MessageBadge } from '@/components/MessageBadge'
 
@@ -67,30 +67,10 @@ export default function DashboardPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <Calendar className="h-5 w-5 text-primary" />
-                            </div>
-                            <h1 className="text-xl font-semibold">BookIt</h1>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <ThemeToggle />
-                            <Button
-                                onClick={handleSignOut}
-                                variant="ghost"
-                                size="sm"
-                                className="gap-2"
-                            >
-                                <LogOut className="h-4 w-4" />
-                                Sign Out
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="BookIt"
+                titleIcon={<Calendar className="h-5 w-5 text-primary" />}
+            />
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

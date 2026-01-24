@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import {
     usersCollection,
     query,
@@ -13,15 +12,12 @@ import {
 } from '@/lib/firestore'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header, NavItem } from '@/components/Header'
 import type { User, ProviderCategory } from '@/types'
 import { PROVIDER_CATEGORIES } from '@/types'
-import { Search, Users, Clock, Calendar, ArrowRight, LogOut, Home, Euro, Tag, X } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { Search, Users, Clock, Calendar, ArrowRight, Home, Euro, Tag, X } from 'lucide-react'
 
 export default function ProviderDirectoryPage() {
-    const { signOut } = useAuth()
-    const router = useRouter()
     const [providers, setProviders] = useState<User[]>([])
     const [filteredProviders, setFilteredProviders] = useState<User[]>([])
     const [searchQuery, setSearchQuery] = useState('')
@@ -73,45 +69,20 @@ export default function ProviderDirectoryPage() {
         setFilteredProviders(filtered)
     }, [searchQuery, selectedCategory, providers])
 
-    const handleSignOut = async () => {
-        await signOut()
-        router.push('/')
-    }
+    const navItems: NavItem[] = [
+        { href: '/dashboard', label: 'Dashboard', icon: <Home className="h-4 w-4" /> },
+        { href: '/my-bookings', label: 'My Bookings', icon: <Calendar className="h-4 w-4" />, variant: 'outline' },
+    ]
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                                <Users className="h-5 w-5 text-green-500" />
-                            </div>
-                            <h1 className="text-xl font-semibold">Browse Providers</h1>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="sm" className="gap-2">
-                                    <Home className="h-4 w-4" />
-                                    Dashboard
-                                </Button>
-                            </Link>
-                            <Link href="/my-bookings">
-                                <Button variant="outline" size="sm" className="gap-2">
-                                    <Calendar className="h-4 w-4" />
-                                    My Bookings
-                                </Button>
-                            </Link>
-                            <ThemeToggle />
-                            <Button onClick={handleSignOut} variant="ghost" size="sm" className="gap-2">
-                                <LogOut className="h-4 w-4" />
-                                Sign Out
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Browse Providers"
+                titleIcon={<Users className="h-5 w-5 text-green-500" />}
+                navItems={navItems}
+                maxWidth="max-w-6xl"
+            />
 
             {/* Main Content */}
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -6,7 +6,7 @@ import { useUser } from '@clerk/nextjs'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import { getUserTimezone, TIMEZONE_OPTIONS } from '@/lib/timezone'
 import type { UserRole, ProviderCategory } from '@/types'
 import { PROVIDER_CATEGORIES } from '@/types'
@@ -96,19 +96,12 @@ export default function ProfileSetupPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                                <User className="h-5 w-5 text-primary" />
-                            </div>
-                            <h1 className="text-xl font-semibold">Complete Your Profile</h1>
-                        </div>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Complete Your Profile"
+                titleIcon={<User className="h-5 w-5 text-primary" />}
+                showSignOut={false}
+                maxWidth="max-w-3xl"
+            />
 
             {/* Main Content */}
             <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

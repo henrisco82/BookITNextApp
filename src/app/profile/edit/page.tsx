@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro, Tag } from 'lucide-react'
 import { PROVIDER_CATEGORIES } from '@/types'
@@ -174,21 +174,13 @@ export default function EditProfilePage() {
         {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold">Edit Profile</h1>
-                        </div>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Edit Profile"
+                backHref="/dashboard"
+                backIcon={<ArrowLeft className="h-5 w-5" />}
+                showSignOut={false}
+                maxWidth="max-w-2xl"
+            />
 
             {/* Main Content */}
             <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

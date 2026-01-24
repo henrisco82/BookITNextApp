@@ -3,7 +3,6 @@
 // Provider Dashboard - overview of upcoming bookings and quick actions
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import {
     bookingsCollection,
@@ -18,17 +17,14 @@ import {
 import { formatInTimezone, formatTimeInTimezone } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import type { Booking } from '@/types'
-import { Calendar, Clock, Users, Settings, LogOut, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video, MessageSquare } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { Calendar, Clock, Users, Settings, Plus, Images, Check, XCircle, AlertTriangle, CreditCard, Euro, ArrowLeft, Video, MessageSquare } from 'lucide-react'
 import { sendBookerNotification } from '@/lib/email'
 import { getOrCreateConversation, getConversationByBookingId } from '@/hooks/useConversations'
 
 export default function ProviderDashboardPage() {
     const { user, isLoading: isUserLoading } = useCurrentUser()
-    const { signOut } = useAuth()
-    const router = useRouter()
     const [upcomingBookings, setUpcomingBookings] = useState<Booking[]>([])
     const [pendingBookings, setPendingBookings] = useState<Booking[]>([])
     const [isLoading, setIsLoading] = useState(true)
@@ -98,11 +94,6 @@ export default function ProviderDashboardPage() {
 
         fetchBookings()
     }, [user])
-
-    const handleSignOut = async () => {
-        await signOut()
-        router.push('/')
-    }
 
     const handleBookingAction = async (bookingId: string, action: 'confirm' | 'reject') => {
         try {
@@ -204,27 +195,11 @@ export default function ProviderDashboardPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/dashboard">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold">Provider Dashboard</h1>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <ThemeToggle />
-                            <Button onClick={handleSignOut} variant="ghost" size="sm" className="gap-2">
-                                <LogOut className="h-4 w-4" />
-                                Sign Out
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Provider Dashboard"
+                backHref="/dashboard"
+                backIcon={<ArrowLeft className="h-5 w-5" />}
+            />
 
             {/* Main Content */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

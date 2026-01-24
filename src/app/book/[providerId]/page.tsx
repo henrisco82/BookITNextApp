@@ -26,7 +26,7 @@ import {
 } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import type { User, Availability, Booking } from '@/types'
 import Image from 'next/image'
 import { ArrowLeft, Calendar, Clock, ChevronLeft, ChevronRight, Globe, Euro, User as UserIcon } from 'lucide-react'
@@ -228,21 +228,13 @@ export default function BookingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/browse">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold">Book Session</h1>
-                        </div>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Book Session"
+                backHref="/browse"
+                backIcon={<ArrowLeft className="h-5 w-5" />}
+                showSignOut={false}
+                maxWidth="max-w-4xl"
+            />
 
             {/* Main Content */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

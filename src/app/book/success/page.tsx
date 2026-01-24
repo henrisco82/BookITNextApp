@@ -4,19 +4,15 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CheckCircle, Calendar, ArrowRight } from 'lucide-react'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 
 export default function BookingSuccessPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <h1 className="text-xl font-semibold">Booking Confirmed</h1>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Booking Confirmed"
+                showSignOut={false}
+            />
 
             <div className="max-w-md mx-auto px-4 py-16">
                 <Card className="border-2 text-center">

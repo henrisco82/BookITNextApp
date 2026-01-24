@@ -9,7 +9,7 @@ import { sendCancellationNotification } from '@/lib/email'
 import { formatInTimezone, formatTimeInTimezone, canCancelBooking, getMinutesUntilBooking } from '@/lib/timezone'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header, NavItem } from '@/components/Header'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
 import type { Booking } from '@/types'
 import { Calendar, Clock, Search, ArrowLeft, AlertCircle, CheckCircle, AlertTriangle, X, Star, Video, MessageSquare } from 'lucide-react'
@@ -174,34 +174,23 @@ export default function BookerDashboardPage() {
         (b) => getTimeMs(b.startUTC as Date | { seconds: number }) <= nowMs || b.status === 'cancelled' || b.status === 'rejected'
     )
 
+    const navItems: NavItem[] = [
+        { href: '/browse', label: 'Browse Providers', icon: <Search className="h-4 w-4" />, variant: 'outline' },
+    ]
+
     return (
         <>
         {ConfirmDialog}
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/browse">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold">My Bookings</h1>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <Link href="/browse">
-                                <Button variant="outline" size="sm" className="gap-2">
-                                    <Search className="h-4 w-4" />
-                                    Browse Providers
-                                </Button>
-                            </Link>
-                            <ThemeToggle />
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="My Bookings"
+                backHref="/browse"
+                backIcon={<ArrowLeft className="h-5 w-5" />}
+                navItems={navItems}
+                showSignOut={false}
+                maxWidth="max-w-4xl"
+            />
 
             {/* Notifications Status Warning */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">

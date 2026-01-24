@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { Header } from '@/components/Header'
 import type { Booking, Review } from '@/types'
 import { ArrowLeft, Star, Loader2, CheckCircle } from 'lucide-react'
 import { formatInTimezone } from '@/lib/timezone'
@@ -146,21 +146,13 @@ export default function ReviewPage() {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
                 {/* Header */}
-                <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                    <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between items-center h-16">
-                            <div className="flex items-center gap-3">
-                                <Link href="/my-bookings">
-                                    <Button variant="ghost" size="icon">
-                                        <ArrowLeft className="h-5 w-5" />
-                                    </Button>
-                                </Link>
-                                <h1 className="text-xl font-semibold">Review</h1>
-                            </div>
-                            <ThemeToggle />
-                        </div>
-                    </div>
-                </div>
+                <Header
+                    title="Review"
+                    backHref="/my-bookings"
+                    backIcon={<ArrowLeft className="h-5 w-5" />}
+                    showSignOut={false}
+                    maxWidth="max-w-2xl"
+                />
 
                 <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <Card className="border-2">
@@ -212,21 +204,13 @@ export default function ReviewPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
             {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex justify-between items-center h-16">
-                        <div className="flex items-center gap-3">
-                            <Link href="/my-bookings">
-                                <Button variant="ghost" size="icon">
-                                    <ArrowLeft className="h-5 w-5" />
-                                </Button>
-                            </Link>
-                            <h1 className="text-xl font-semibold">Leave a Review</h1>
-                        </div>
-                        <ThemeToggle />
-                    </div>
-                </div>
-            </div>
+            <Header
+                title="Leave a Review"
+                backHref="/my-bookings"
+                backIcon={<ArrowLeft className="h-5 w-5" />}
+                showSignOut={false}
+                maxWidth="max-w-2xl"
+            />
 
             <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Session Info */}
