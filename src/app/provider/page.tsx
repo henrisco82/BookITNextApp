@@ -69,23 +69,31 @@ export default function ProviderDashboardPage() {
                         return aTime - bTime
                     })
 
-                setUpcomingBookings(confirmed.slice(0, 5))
+                const upcomingConfirmed = confirmed.slice(0, 5)
+                setUpcomingBookings(upcomingConfirmed)
                 setPendingBookings(pending)
-                setIsLoading(false)
 
-                // Fetch conversation IDs for confirmed bookings (non-blocking)
-                const convoIds: Record<string, string> = {}
-                for (const booking of confirmed.slice(0, 5)) {
-                    try {
-                        const convo = await getConversationByBookingId(booking.id)
-                        if (convo) {
-                            convoIds[booking.id] = convo.id
+                // Fetch conversation IDs for confirmed bookings in parallel
+                const convoResults = await Promise.all(
+                    upcomingConfirmed.map(async (booking) => {
+                        try {
+                            const convo = await getConversationByBookingId(booking.id)
+                            return convo ? { bookingId: booking.id, convoId: convo.id } : null
+                        } catch (err) {
+                            console.error('Error fetching conversation for booking:', booking.id, err)
+                            return null
                         }
-                    } catch (err) {
-                        console.error('Error fetching conversation for booking:', booking.id, err)
+                    })
+                )
+
+                const convoIds: Record<string, string> = {}
+                for (const result of convoResults) {
+                    if (result) {
+                        convoIds[result.bookingId] = result.convoId
                     }
                 }
                 setConversationIds(convoIds)
+                setIsLoading(false)
             } catch (error) {
                 console.error('Error fetching bookings:', error)
                 setIsLoading(false)
