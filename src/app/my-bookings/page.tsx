@@ -195,7 +195,7 @@ export default function BookerDashboardPage() {
 
             {/* Notifications Status Warning */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-                {!user?.notificationSettings?.email?.bookingDeclined && (
+                {user && !user.notificationSettings?.email?.bookingDeclined && (
                     <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 shrink-0" />

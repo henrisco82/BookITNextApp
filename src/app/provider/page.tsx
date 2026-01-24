@@ -261,7 +261,7 @@ export default function ProviderDashboardPage() {
                 )}
 
                 {/* Notifications Status Warning */}
-                {!user?.notificationSettings?.email?.newBookingRequest && (
+                {user && !user.notificationSettings?.email?.newBookingRequest && (
                     <div className="mb-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-500 flex items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <AlertTriangle className="h-5 w-5 shrink-0" />
