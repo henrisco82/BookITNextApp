@@ -13,7 +13,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Header } from '@/components/Header'
 import { useConfirmDialog } from '@/components/ConfirmDialog'
-import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro, Tag } from 'lucide-react'
+import { ArrowLeft, Save, Trash2, User, AlertTriangle, Lock, Camera, Euro, Tag, Clock, Globe, RefreshCw } from 'lucide-react'
+import { getUserTimezone, TIMEZONE_OPTIONS } from '@/lib/timezone'
 import { PROVIDER_CATEGORIES } from '@/types'
 import type { ProviderCategory } from '@/types'
 
@@ -28,6 +29,9 @@ export default function EditProfilePage() {
         category: '' as ProviderCategory | '',
         bio: '',
         pricePerSession: '0',
+        defaultSessionMinutes: 60,
+        bufferMinutes: 15,
+        timezone: '',
     })
     const [passwords, setPasswords] = useState({
         current: '',
@@ -44,6 +48,9 @@ export default function EditProfilePage() {
                 category: user.category || '',
                 bio: user.bio || '',
                 pricePerSession: user.pricePerSession?.toString() || '0',
+                defaultSessionMinutes: user.defaultSessionMinutes || 60,
+                bufferMinutes: user.bufferMinutes || 15,
+                timezone: user.timezone || getUserTimezone(),
             })
         }
     }, [user])
@@ -106,15 +113,19 @@ export default function EditProfilePage() {
 
         setIsSaving(true)
         try {
+            const isProvider = user.role === 'provider' || user.role === 'both'
             await updateProfile({
                 displayName: formData.displayName,
-                category: (user.role === 'provider' || user.role === 'both') && formData.category
+                category: isProvider && formData.category
                     ? formData.category as ProviderCategory
                     : undefined,
                 bio: formData.bio,
-                pricePerSession: (user.role === 'provider' || user.role === 'both')
+                pricePerSession: isProvider
                     ? parseFloat(formData.pricePerSession) || 0
-                    : undefined
+                    : undefined,
+                defaultSessionMinutes: isProvider ? formData.defaultSessionMinutes : undefined,
+                bufferMinutes: isProvider ? formData.bufferMinutes : undefined,
+                timezone: formData.timezone,
             })
             router.push('/dashboard')
         } catch (error) {
@@ -291,8 +302,91 @@ export default function EditProfilePage() {
                                             placeholder="0.00"
                                         />
                                     </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="defaultSessionMinutes" className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4" />
+                                            Default Session Length
+                                        </Label>
+                                        <select
+                                            id="defaultSessionMinutes"
+                                            name="defaultSessionMinutes"
+                                            value={formData.defaultSessionMinutes}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, defaultSessionMinutes: Number(e.target.value) }))}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            <option value={30}>30 minutes</option>
+                                            <option value={45}>45 minutes</option>
+                                            <option value={60}>60 minutes</option>
+                                            <option value={90}>90 minutes</option>
+                                            <option value={120}>2 hours</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label htmlFor="bufferMinutes" className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4" />
+                                            Buffer Between Sessions
+                                        </Label>
+                                        <select
+                                            id="bufferMinutes"
+                                            name="bufferMinutes"
+                                            value={formData.bufferMinutes}
+                                            onChange={(e) => setFormData(prev => ({ ...prev, bufferMinutes: Number(e.target.value) }))}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            <option value={0}>No buffer</option>
+                                            <option value={5}>5 minutes</option>
+                                            <option value={10}>10 minutes</option>
+                                            <option value={15}>15 minutes</option>
+                                            <option value={30}>30 minutes</option>
+                                        </select>
+                                        <p className="text-xs text-muted-foreground">
+                                            Time between sessions for breaks or preparation
+                                        </p>
+                                    </div>
                                 </>
                             )}
+
+                            <div className="space-y-2">
+                                <Label htmlFor="timezone" className="flex items-center gap-2">
+                                    <Globe className="h-4 w-4" />
+                                    Timezone
+                                </Label>
+                                <div className="flex gap-2">
+                                    <select
+                                        id="timezone"
+                                        name="timezone"
+                                        value={formData.timezone}
+                                        onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+                                        className="flex h-10 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                    >
+                                        {TIMEZONE_OPTIONS.map((tz) => (
+                                            <option key={tz.value} value={tz.value}>
+                                                {tz.label}
+                                            </option>
+                                        ))}
+                                        {/* Include current timezone if not in list */}
+                                        {formData.timezone && !TIMEZONE_OPTIONS.find(tz => tz.value === formData.timezone) && (
+                                            <option value={formData.timezone}>
+                                                {formData.timezone}
+                                            </option>
+                                        )}
+                                    </select>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={() => setFormData(prev => ({ ...prev, timezone: getUserTimezone() }))}
+                                        title="Detect my timezone"
+                                    >
+                                        <RefreshCw className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Click the refresh button to auto-detect your current timezone
+                                </p>
+                            </div>
 
                             <div className="space-y-2">
                                 <Label htmlFor="bio">Bio</Label>

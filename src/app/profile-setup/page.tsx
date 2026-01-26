@@ -23,7 +23,7 @@ export default function ProfileSetupPage() {
     const [category, setCategory] = useState<ProviderCategory | ''>('')
     const [timezone, setTimezone] = useState(getUserTimezone())
     const [defaultSessionMinutes, setDefaultSessionMinutes] = useState(60)
-    const [bufferMinutes] = useState(15)
+    const [bufferMinutes, setBufferMinutes] = useState(15)
     const [bio, setBio] = useState('')
     const [pricePerSession, setPricePerSession] = useState(25) // Default 25 EUR
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -273,6 +273,28 @@ export default function ProfileSetupPage() {
                                             <option value={90}>90 minutes</option>
                                             <option value={120}>2 hours</option>
                                         </select>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="bufferTime" className="block text-sm font-medium mb-2">
+                                            <Clock className="h-4 w-4 inline mr-2" />
+                                            Buffer Between Sessions
+                                        </label>
+                                        <select
+                                            id="bufferTime"
+                                            value={bufferMinutes}
+                                            onChange={(e) => setBufferMinutes(Number(e.target.value))}
+                                            className="w-full px-4 py-2 border rounded-lg bg-background focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+                                        >
+                                            <option value={0}>No buffer</option>
+                                            <option value={5}>5 minutes</option>
+                                            <option value={10}>10 minutes</option>
+                                            <option value={15}>15 minutes</option>
+                                            <option value={30}>30 minutes</option>
+                                        </select>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            Time between sessions for breaks or preparation
+                                        </p>
                                     </div>
 
                                     <div>
